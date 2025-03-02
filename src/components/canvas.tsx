@@ -6,6 +6,7 @@ interface CanvasProps extends ComponentPropsWithoutRef<"canvas"> {
   draw?: (ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement) => void;
 }
 interface UseCanvasProps extends Pick<CanvasProps, "draw"> {}
+
 export function useCanvas({ draw }: UseCanvasProps) {
   const ref = useRef<HTMLCanvasElement>(null);
 
