@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 
-import { Canvas } from "./canvas";
+import { Canvas } from "./Canvas";
 
 const meta = {
   title: "Canvas",
