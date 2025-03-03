@@ -1,26 +1,29 @@
 import { BaseFC } from "@/lib/utility-types";
 import { cn } from "@/lib/utils";
+import { CanvasViewProps, UseCanvasProps } from "./types";
 import { useCanvas } from "./useCanvas";
-import { CanvasProps } from "./types";
 
-export const Canvas: BaseFC<CanvasProps> = ({
+export const CanvasView: BaseFC<CanvasViewProps> = ({
   children,
-  draw,
   className,
+  canvasRef,
+  wrapperRef,
+  box,
   ...htmlCanvasProps
 }) => {
-  const { canvasRef, box } = useCanvas({
-    draw,
-    canvasWidth: htmlCanvasProps.width,
-    canvasHeight: htmlCanvasProps.height,
-  });
   return (
     <div
+      ref={wrapperRef}
       style={box}
       className={cn("border-primary border relative box-content", className)}
     >
-      <canvas ref={canvasRef} {...htmlCanvasProps} />
+      <canvas ref={canvasRef} {...htmlCanvasProps} {...box} />
       {children}
     </div>
   );
+};
+
+export const Canvas: BaseFC<UseCanvasProps> = (props) => {
+  const canvas = useCanvas(props);
+  return <CanvasView {...canvas} />;
 };

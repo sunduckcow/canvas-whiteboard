@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
-import { UseCanvasProps } from "./types";
-import { upscalePlugin } from "./plugins/upscalePlugin";
+import type { UseCanvasProps } from "./types";
+import { getPrimitives } from "@/utils/primitives";
 
 export function useCanvas({ draw, canvasWidth, canvasHeight }: UseCanvasProps) {
   const box = useMemo(
@@ -20,9 +20,9 @@ export function useCanvas({ draw, canvasWidth, canvasHeight }: UseCanvasProps) {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    upscalePlugin(ctx, box, 2);
+    const primitives = getPrimitives(ctx);
 
-    draw?.(ctx, box);
+    draw?.(ctx, { ...box, primitives });
   }, [draw, box]);
 
   return { canvasRef, box };

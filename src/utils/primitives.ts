@@ -122,7 +122,9 @@ export function getPrimitives(ctx: CanvasRenderingContext2D) {
   };
 }
 
-type LinearRepeat = [beg: number, step: number, end: number];
+export type Primitives = ReturnType<typeof getPrimitives>;
+
+export type LinearRepeat = [beg: number, step: number, end: number];
 export function doGrid(
   [begX, stepX, endX]: LinearRepeat,
   [begY, stepY, endY]: LinearRepeat,
