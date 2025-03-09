@@ -1,29 +1,17 @@
-import { BaseFC } from "@/lib/utility-types";
-import { cn } from "@/lib/utils";
-import { CanvasViewProps, UseCanvasProps } from "./types";
-import { useCanvas } from "./useCanvas";
+import { RawCanvas } from "./RawCanvas";
+import { Script } from "./types";
+import { UseCanvasProps, useCanvas } from "./UseCanvas";
+import type { BaseFC } from "@/lib/utility-types";
 
-export const CanvasView: BaseFC<CanvasViewProps> = ({
-  children,
-  className,
-  canvasRef,
-  wrapperRef,
-  box,
-  ...htmlCanvasProps
+export interface CanvasProps extends UseCanvasProps {
+  preScripts?: Script[];
+  postScripts?: Script[];
+}
+export const Canvas: BaseFC<CanvasProps> = ({
+  preScripts,
+  postScripts,
+  ...props
 }) => {
-  return (
-    <div
-      ref={wrapperRef}
-      style={box}
-      className={cn("border-primary border relative box-content", className)}
-    >
-      <canvas ref={canvasRef} {...htmlCanvasProps} {...box} />
-      {children}
-    </div>
-  );
-};
-
-export const Canvas: BaseFC<UseCanvasProps> = (props) => {
-  const canvas = useCanvas(props);
-  return <CanvasView {...canvas} />;
+  const canvas = useCanvas(props, preScripts, postScripts);
+  return <RawCanvas {...canvas} />;
 };

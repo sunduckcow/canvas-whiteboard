@@ -1,14 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react";
-
-import { CanvasView, Canvas } from "./Canvas";
-import { useCanvas } from "./useCanvas";
-import { doGrid } from "@/utils/primitives";
-import { useGestures } from "@/hooks/useGestures";
-import { Button } from "../ui/button";
 import { RefreshCcw } from "lucide-react";
-import { DrawFn } from "./types";
 import { useCallback } from "react";
+
+import { Canvas } from "./Canvas";
 import { upscalePlugin } from "./plugins/upscalePlugin";
+import { RawCanvas } from "./RawCanvas";
+import { Script } from "./types";
+import { useCanvas } from "./UseCanvas";
+import { Button } from "../ui/button";
+import { useGestures } from "@/hooks/useGestures";
+import { doGrid } from "@/utils/primitives";
 
 const meta = {
   title: "Canvas",
@@ -25,7 +26,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Primary: Story = {
   args: {
-    draw(ctx, { width, height, primitives: { cross } }) {
+    script(ctx, { width, height, primitives: { cross } }) {
       ctx.strokeStyle = "green";
       ctx.lineWidth = 10;
       cross(width / 2, height / 2, Math.min(width / 4, height / 4));
@@ -35,7 +36,7 @@ export const Primary: Story = {
 
 export const UpscalePlugin: Story = {
   args: {
-    draw(ctx, { width, height, primitives: { cross } }) {
+    script(ctx, { width, height, primitives: { cross } }) {
       upscalePlugin(ctx, { width, height }, 2);
 
       ctx.strokeStyle = "green";
@@ -46,30 +47,28 @@ export const UpscalePlugin: Story = {
 };
 
 export const CrossGrid: Story = {
-  render({ draw: _draw, ...rest }) {
+  render: function Render(props) {
     const { x, y, z, ref, reset } = useGestures();
-    const draw = useCallback<DrawFn>(
-      (ctx, box) => {
-        ctx.reset();
+    const translate = useCallback<Script>(
+      (ctx) => {
         ctx.translate(x, y);
         ctx.scale(z, z);
-        _draw?.(ctx, box);
       },
-      [_draw, x, y, z]
+      [x, y, z]
     );
-    const canvas = useCanvas({ ...rest, draw });
+    const canvas = useCanvas(props, [translate]);
     return (
       <div className="[&>:not(:first-child)]:mt-8">
         <Button onClick={reset}>
           <RefreshCcw />
           Reset
         </Button>
-        <CanvasView {...canvas} wrapperRef={ref} />
+        <RawCanvas {...canvas} wrapperRef={ref} />
       </div>
     );
   },
   args: {
-    draw(ctx, { width, height, primitives: { cross } }) {
+    script(ctx, { width, height, primitives: { cross } }) {
       const n = 5;
       const step = 10;
       const cx = width / 2;
