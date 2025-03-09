@@ -7,6 +7,10 @@ export type Script = (
   meta: Box & { primitives: Primitives }
 ) => void;
 
+export type CanvasPlugin<Props extends unknown[] = []> = (
+  ...props: Props
+) => Script;
+
 // /* Work in progress */
 
 // export type CanvasPlugin_ = {

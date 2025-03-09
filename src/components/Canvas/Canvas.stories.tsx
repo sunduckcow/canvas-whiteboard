@@ -36,9 +36,8 @@ export const Primary: Story = {
 
 export const UpscalePlugin: Story = {
   args: {
+    preScripts: [upscalePlugin()],
     script(ctx, { width, height, primitives: { cross } }) {
-      upscalePlugin(ctx, { width, height }, 2);
-
       ctx.strokeStyle = "green";
       ctx.lineWidth = 10;
       cross(width / 2, height / 2, Math.min(width / 4, height / 4));
@@ -56,7 +55,7 @@ export const CrossGrid: Story = {
       },
       [x, y, z]
     );
-    const canvas = useCanvas(props, [translate]);
+    const canvas = useCanvas(props, [translate, upscalePlugin()]);
     return (
       <div className="[&>:not(:first-child)]:mt-8">
         <Button onClick={reset}>
