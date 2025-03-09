@@ -23,6 +23,8 @@ export const RawCanvas: BaseFC<RawCanvasProps> = ({
       className={cn("border-primary border relative box-content", className)}
     >
       <canvas ref={canvasRef} {...htmlCanvasProps} {...box} />
+      {/** TODO: layers = more canvas elements */}
+
       {children}
     </div>
   );

@@ -12,10 +12,13 @@ const getRealCoordinates = (e: MouseEvent, parent: HTMLElement) => {
   return [x, y] as const;
 };
 
-interface UseGesturesParams {
-  x?: number;
-  y?: number;
-  z?: number;
+export interface Position {
+  x: number;
+  y: number;
+  z: number;
+}
+
+interface UseGesturesParams extends Partial<Position> {
   speed?: number;
 }
 

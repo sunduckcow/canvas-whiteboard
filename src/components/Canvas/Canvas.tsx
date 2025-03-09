@@ -1,17 +1,11 @@
-import { RawCanvas } from "./RawCanvas";
-import { Script } from "./types";
-import { UseCanvasProps, useCanvas } from "./UseCanvas";
+import { RawCanvas, RawCanvasProps } from "./RawCanvas";
+import { UseCanvasProps, useCanvas } from "./useCanvas";
 import type { BaseFC } from "@/lib/utility-types";
 
 export interface CanvasProps extends UseCanvasProps {
-  preScripts?: Script[];
-  postScripts?: Script[];
+  rawCanvasProps?: RawCanvasProps;
 }
-export const Canvas: BaseFC<CanvasProps> = ({
-  preScripts,
-  postScripts,
-  ...props
-}) => {
-  const canvas = useCanvas(props, preScripts, postScripts);
-  return <RawCanvas {...canvas} />;
+export const Canvas: BaseFC<CanvasProps> = ({ rawCanvasProps, ...props }) => {
+  const canvas = useCanvas(props);
+  return <RawCanvas {...rawCanvasProps} {...canvas} />;
 };

@@ -1,20 +1,22 @@
 import { ComponentProps, useMemo, useRef, useEffect } from "react";
 
 import { resetScript } from "./constants";
-import { Script } from "./types";
-import { resolveScripts } from "@/lib/utils";
-import { getPrimitives } from "@/utils/primitives";
+import { CanvasPlugin, Script } from "./types";
+import { resolveScripts } from "./utils";
+import { getTools } from "@/utils/tools";
 
 export interface UseCanvasProps {
   script?: Script | Script[];
   canvasWidth?: ComponentProps<"canvas">["width"];
   canvasHeight?: ComponentProps<"canvas">["height"];
+  plugins?: ReturnType<CanvasPlugin>[];
 }
-export function useCanvas(
-  { script, canvasWidth, canvasHeight }: UseCanvasProps,
-  preScripts?: Script[],
-  postScripts?: Script[]
-) {
+export function useCanvas({
+  script,
+  canvasWidth,
+  canvasHeight,
+  plugins,
+}: UseCanvasProps) {
   const box = useMemo(
     () => ({
       width: Number(canvasWidth || 300),
@@ -33,19 +35,16 @@ export function useCanvas(
 
     if (!script) return;
 
-    const primitives = getPrimitives(ctx);
+    const tools = getTools(ctx);
 
-    const drawScripts = resolveScripts(
-      resetScript,
-      preScripts,
-      script,
-      postScripts
-    );
+    const drawContext = { box, tools };
 
-    drawScripts?.forEach((drawScript) => {
-      drawScript(ctx, { ...box, primitives });
+    const drawScripts = resolveScripts(resetScript, plugins, script);
+
+    drawScripts.forEach((drawScript) => {
+      drawScript(ctx, drawContext);
     });
-  }, [script, box, preScripts, postScripts]);
+  }, [script, box, plugins]);
 
   return { canvasRef, box };
 }
