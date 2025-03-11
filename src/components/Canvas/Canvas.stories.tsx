@@ -23,10 +23,10 @@ type Story = StoryObj<typeof meta>;
 
 export const Simple: Story = {
   args: {
-    script(ctx, { box: { width, height }, tools: { cross } }) {
+    script(ctx, { box: { width, height }, tools }) {
       ctx.strokeStyle = "green";
       ctx.lineWidth = 10;
-      cross(width / 2, height / 2, Math.min(width / 4, height / 4));
+      tools.cross(width / 2, height / 2, Math.min(width / 4, height / 4));
     },
   },
 };
@@ -35,9 +35,9 @@ export const UpscalePlugin: Story = {
   args: { plugins: [upscalePlugin()], script: Simple.args?.script },
 };
 
-export const Primary: Story = {
+export const Grid: Story = {
   render: function Render(args) {
-    const { x, y, z, ref, reset } = useGestures();
+    const { x, y, z, wrapperRef, reset } = useGestures();
 
     return (
       <div className="[&>:not(:first-child)]:mt-8">
@@ -47,15 +47,15 @@ export const Primary: Story = {
         </Button>
         <Canvas
           {...args}
-          rawCanvasProps={{ wrapperRef: ref }}
+          rawCanvasProps={{ wrapperRef }}
           script={[
             upscalePlugin(),
-            (ctx, { box, tools: { xoy } }) => {
+            (ctx, { box, tools }) => {
               ctx.strokeStyle = "gray";
-              xoy({ x, y, z, ...box });
+              tools.xoy({ x, y, z, ...box });
             },
             transformPlugin({ x, y, z }),
-            (ctx, { box: { width, height }, tools: { cross } }) => {
+            (ctx, { box: { width, height }, tools }) => {
               const n = 10;
               const step = 10;
               const cx = width / 2;
@@ -67,7 +67,7 @@ export const Primary: Story = {
               doGrid(
                 [cx - n * step, step, cx + n * step],
                 [cy - n * step, step, cy + n * step],
-                (x, y) => cross(x, y, step / 3)
+                (x, y) => tools.cross(x, y, step / 3)
               );
             },
           ]}

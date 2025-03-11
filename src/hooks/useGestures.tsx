@@ -1,10 +1,8 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 
-type EventListenersMap = {
-  [key in keyof HTMLElementEventMap]: (ev: HTMLElementEventMap[key]) => void;
-};
+import { useEventListeners } from "./useEventListeners";
 
-const getRealCoordinates = (e: MouseEvent, parent: HTMLElement) => {
+export const getRealCoordinates = (e: MouseEvent, parent: HTMLElement) => {
   const { clientX, clientY } = e;
   const bounds = parent.getBoundingClientRect();
   const x = Math.round(clientX - bounds.left);
@@ -28,16 +26,17 @@ export function useGestures({
   z: _z = 1,
   speed = 2,
 }: UseGesturesParams = {}) {
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
   const [{ x, y, z }, setPosition] = useState({ x: _x, y: _y, z: _z });
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const parent = ref.current;
-    if (!parent) return;
-    const wheelListener: EventListenersMap["wheel"] = (e) => {
+  const reset = useCallback(() => {
+    setPosition({ x: _x, y: _y, z: _z });
+  }, [_x, _y, _z, setPosition]);
+
+  useEventListeners(wrapperRef, {
+    wheel: (e, { x: deltaX, y: deltaY }) => {
       e.preventDefault();
       if (e.ctrlKey) {
-        const [deltaX, deltaY] = getRealCoordinates(e, parent);
-
         const zoom = Math.exp(-e.deltaY / (100 / speed));
         setPosition(({ x, y, z }) => ({
           x: x * zoom + deltaX * (1 - zoom),
@@ -51,24 +50,15 @@ export function useGestures({
           z,
         }));
       }
-    };
-    parent.addEventListener("wheel", wheelListener);
-    return () => {
-      parent.removeEventListener("wheel", wheelListener);
-    };
-  }, [speed, setPosition]);
+    },
+  });
 
-  const reset = useCallback(() => {
-    setPosition({ x: _x, y: _y, z: _z });
-  }, [_x, _y, _z, setPosition]);
-
-  return { x, y, z, ref, reset, setPosition };
+  return { x, y, z, wrapperRef, reset, setPosition };
 }
 
 /**
  * defaults,
  * settings (when apply action, which button pressed etc),
- * materials (ref),
  * transformers (process resulting value)
  * -> useGestures ->
  * raw gestures: delta-move, delta-rotate, delta-scale

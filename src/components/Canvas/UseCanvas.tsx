@@ -1,4 +1,4 @@
-import { ComponentProps, useMemo, useRef, useEffect } from "react";
+import { ComponentProps, useMemo, useEffect } from "react";
 
 import { resetScript } from "./constants";
 import { CanvasPlugin, Script } from "./types";
@@ -6,12 +6,14 @@ import { resolveScripts } from "./utils";
 import { getTools } from "@/utils/tools";
 
 export interface UseCanvasProps {
+  canvasRef: React.RefObject<HTMLCanvasElement | null>;
   script?: Script | Script[];
   canvasWidth?: ComponentProps<"canvas">["width"];
   canvasHeight?: ComponentProps<"canvas">["height"];
   plugins?: ReturnType<CanvasPlugin>[];
 }
 export function useCanvas({
+  canvasRef,
   script,
   canvasWidth,
   canvasHeight,
@@ -24,7 +26,6 @@ export function useCanvas({
     }),
     [canvasWidth, canvasHeight]
   );
-  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -44,7 +45,7 @@ export function useCanvas({
     drawScripts.forEach((drawScript) => {
       drawScript(ctx, drawContext);
     });
-  }, [script, box, plugins]);
+  }, [script, box, plugins, canvasRef]);
 
-  return { canvasRef, box };
+  return { box };
 }
