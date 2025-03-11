@@ -1,4 +1,4 @@
-import { RefObject, useMemo, useState } from "react";
+import { RefObject, useCallback, useMemo, useState } from "react";
 
 import { EventListeners, useEventListeners } from "./useEventListeners";
 
@@ -24,7 +24,7 @@ const isPointInRect = (point: Point, r1: Point, r2: Point): boolean => {
   );
 };
 
-const lengthSquare = (p1: Point, p2: Point) =>
+const len2 = (p1: Point, p2: Point) =>
   (p1.x - p2.x) * (p1.x - p2.x) + (p1.y - p2.y) * (p1.y - p2.y);
 
 export interface Point {
@@ -57,15 +57,30 @@ export const usePoints = ({
   points: PointView[];
   selection?: Rectangle | null;
 } => {
-  const [points, setPoints] = useState<PointView[]>(initialPoints);
+  const [points, setPoints] = useState<Point[]>(initialPoints);
   const [hovered, setHovered] = useState(-1);
   const [selected, setSelected] = useState<number[]>([]);
 
   const [dragStart, setDragStart] = useState<Point | null>(null);
   const [dragStartPoint, setDragStartPoint] = useState(-1);
+  const [dragStartPointSelected, setDragStartPointSelected] = useState(false); // TODO: how to remove it
   const [dragEnd, setDragEnd] = useState<Point | null>(null);
 
   const [relation, setRelation] = useState<Point[] | null>(null);
+
+  const pushPoint = useCallback(
+    (p: Point) => setPoints((prev) => [...prev, p]),
+    []
+  );
+  const addSelected = useCallback(
+    (idxs: number[]) => setSelected((prev) => [...new Set([...prev, ...idxs])]),
+    []
+  );
+  const removeSelected = useCallback(
+    (removeIdx: number) =>
+      setSelected((prev) => prev.filter((idx) => idx !== removeIdx)),
+    []
+  );
 
   const listeners = useMemo<EventListeners>(
     () => ({
@@ -73,91 +88,112 @@ export const usePoints = ({
         setDragStart({ x, y });
         const pointIndex = points.findIndex((p) => isPointNear(p, x, y));
         setDragStartPoint(pointIndex);
-        if (pointIndex >= 0) {
-          if (selected.includes(pointIndex)) {
-            if (shiftKey) {
-              setSelected((prev) => prev.filter((idx) => idx !== pointIndex));
-            }
-          } else {
-            if (shiftKey) {
-              setSelected((prev) => [...prev, pointIndex]);
-            } else {
-              setSelected([pointIndex]);
-            }
-          }
-        }
         // full copy workaround since here we cant get updated selected state
         setRelation(points.map((point) => ({ ...point })));
+
+        const clickedPoint = pointIndex >= 0;
+        const clickedSelected = selected.includes(pointIndex);
+        setDragStartPointSelected(clickedSelected);
+
+        if (clickedPoint && !clickedSelected && shiftKey) {
+          addSelected([pointIndex]);
+        }
+        if (clickedPoint && !clickedSelected && !shiftKey) {
+          setSelected([pointIndex]);
+        }
       },
       mousemove(_e, { x, y }) {
         const pointIndex = points.findIndex((p) => isPointNear(p, x, y));
-        if (pointIndex >= 0) setHovered(pointIndex);
-        else setHovered(-1);
+        const currentlyOnPoint = pointIndex >= 0;
+        if (currentlyOnPoint) {
+          setHovered(pointIndex);
+        }
+        if (!currentlyOnPoint) {
+          setHovered(-1);
+        }
+
+        const clickedPoint = dragStartPoint >= 0;
 
         if (dragStart) {
           setDragEnd({ x, y });
-          if (dragStartPoint >= 0 && relation) {
-            setPoints((prevPoints) => {
-              const newPoints = [...prevPoints];
+        }
+        if (dragStart && clickedPoint && relation) {
+          setPoints((prevPoints) => {
+            const newPoints = [...prevPoints];
 
-              selected.forEach((idx) => {
-                if (relation[idx]) {
-                  const dx = x - dragStart.x;
-                  const dy = y - dragStart.y;
-                  newPoints[idx] = {
-                    x: relation[idx].x + dx,
-                    y: relation[idx].y + dy,
-                  };
-                }
-              });
-              return newPoints;
+            selected.forEach((idx) => {
+              if (relation[idx]) {
+                const dx = x - dragStart.x;
+                const dy = y - dragStart.y;
+                newPoints[idx] = {
+                  x: relation[idx].x + dx,
+                  y: relation[idx].y + dy,
+                };
+              }
             });
-          }
+            return newPoints;
+          });
         }
       },
       mouseup({ shiftKey }, { x, y }) {
-        if (
-          (dragStart && dragEnd && lengthSquare(dragStart, dragEnd) < 25) ||
-          !dragEnd
-        ) {
-          if (dragStartPoint === -1) {
-            setPoints((prev) => [...prev, { x, y }]);
-            setHovered(points.length);
-            if (shiftKey) {
-              setSelected((prev) => [...prev, points.length]);
-            } else {
-              setSelected([points.length]); //?? []
-              // setSelected([]);
-            }
-          } else {
-            if (selected.includes(dragStartPoint)) {
-              setSelected([dragStartPoint]);
-            }
-          }
-        } else {
-          if (dragStartPoint === -1) {
-            if (dragStart && dragEnd) {
-              const selectedIdxs = points
-                .map((point, idx) =>
-                  isPointInRect(point, dragStart, dragEnd) ? idx : null
-                )
-                .filter((point) => point !== null);
-              if (shiftKey) {
-                setSelected((prev) => [...new Set([...prev, ...selectedIdxs])]);
-              } else {
-                setSelected(selectedIdxs);
-              }
-            }
-          }
-        }
-
         setDragStartPoint(-1);
         setDragStart(null);
         setDragEnd(null);
         setRelation(null);
+
+        const didMove = dragStart && dragEnd && len2(dragStart, dragEnd) > 25;
+        const clickedPoint = dragStartPoint >= 0;
+        const clickedSelected = selected.includes(dragStartPoint);
+
+        if (!didMove && !clickedPoint) {
+          pushPoint({ x, y });
+          setHovered(points.length); // hover last added
+        }
+        if (!didMove && !clickedPoint && shiftKey) {
+          addSelected([points.length]);
+        }
+        if (!didMove && !clickedPoint && !shiftKey) {
+          setSelected([points.length]); //?? []
+          // setSelected([]);
+        }
+
+        if (
+          !didMove &&
+          clickedPoint &&
+          clickedSelected &&
+          shiftKey &&
+          dragStartPointSelected
+        ) {
+          removeSelected(dragStartPoint);
+        }
+        if (!didMove && clickedPoint && clickedSelected && !shiftKey) {
+          setSelected([dragStartPoint]);
+        }
+        if (didMove && !clickedPoint && dragStart && dragEnd) {
+          const selectedIdxs = points
+            .map((point, idx) =>
+              isPointInRect(point, dragStart, dragEnd) ? idx : null
+            )
+            .filter((point) => point !== null);
+          if (shiftKey) {
+            addSelected(selectedIdxs);
+          } else {
+            setSelected(selectedIdxs);
+          }
+        }
       },
     }),
-    [dragEnd, dragStart, dragStartPoint, points, relation, selected]
+    [
+      addSelected,
+      dragEnd,
+      dragStart,
+      dragStartPoint,
+      points,
+      pushPoint,
+      relation,
+      removeSelected,
+      selected,
+    ]
   );
 
   useEventListeners(canvasRef, listeners);
