@@ -26,7 +26,7 @@ const handlerWrapper =
   (handler: EventHandler, element: HTMLElement) => (e: Event) => {
     if (isMouseEvent(e)) {
       // For mouse events, calculate the relative point
-      const point = getPoint(element, e.clientX, e.clientY);
+      const point = getPoint(element, e.x, e.y);
       // Call with point for mouse events
       (handler as (e: MouseEvent, point: Point) => void)(e, point);
     } else {

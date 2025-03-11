@@ -9,7 +9,7 @@ import { Button } from "../ui/button";
 import { transformPlugin } from "./plugins/transformPlugin";
 import { useCanvas } from "./useCanvas";
 import { useGestures } from "@/hooks/useGestures";
-import { PointState, usePoints } from "@/hooks/usePoints";
+import { usePoints } from "@/hooks/usePoints";
 import { doGrid } from "@/utils/tools";
 
 const meta = {
@@ -81,12 +81,6 @@ export const Grid: Story = {
   },
 };
 
-const stateColor: Record<PointState, string> = {
-  idle: "green",
-  hovered: "lime",
-  selected: "yellow",
-};
-
 export const SimplePoints: Story = {
   render: function Render(args) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -101,8 +95,21 @@ export const SimplePoints: Story = {
           ctx.strokeStyle = "gray";
           tools.rect(selection.x1, selection.y1, selection.x2, selection.y2);
         }
-        points.forEach(({ x, y, state }) => {
-          ctx.strokeStyle = stateColor[state || "idle"];
+        points.forEach(({ x, y, hovered, selected }) => {
+          if (hovered) {
+            if (selected) {
+              ctx.strokeStyle = "lightblue";
+            } else {
+              ctx.strokeStyle = "lightgreen";
+            }
+          } else {
+            if (selected) {
+              ctx.strokeStyle = "blue";
+            } else {
+              ctx.strokeStyle = "green";
+            }
+          }
+
           tools.cross(x, y);
         });
       },
