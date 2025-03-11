@@ -1,11 +1,15 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { RefreshCcw } from "lucide-react";
+import { useRef } from "react";
 
 import { Canvas } from "./Canvas";
 import { upscalePlugin } from "./plugins/upscalePlugin";
+import { RawCanvas } from "./RawCanvas";
 import { Button } from "../ui/button";
 import { transformPlugin } from "./plugins/transformPlugin";
+import { useCanvas } from "./useCanvas";
 import { useGestures } from "@/hooks/useGestures";
+import { PointState, usePoints } from "@/hooks/usePoints";
 import { doGrid } from "@/utils/tools";
 
 const meta = {
@@ -74,5 +78,35 @@ export const Grid: Story = {
         />
       </div>
     );
+  },
+};
+
+const stateColor: Record<PointState, string> = {
+  idle: "green",
+  hovered: "lime",
+  selected: "yellow",
+};
+
+export const SimplePoints: Story = {
+  render: function Render(args) {
+    const canvasRef = useRef<HTMLCanvasElement>(null);
+    const { points, selection } = usePoints({ canvasRef });
+
+    const canvas = useCanvas({
+      canvasRef,
+      ...args,
+      script: (ctx, { tools }) => {
+        ctx.lineWidth = 2;
+        if (selection) {
+          ctx.strokeStyle = "gray";
+          tools.rect(selection.x1, selection.y1, selection.x2, selection.y2);
+        }
+        points.forEach(({ x, y, state }) => {
+          ctx.strokeStyle = stateColor[state || "idle"];
+          tools.cross(x, y);
+        });
+      },
+    });
+    return <RawCanvas canvasRef={canvasRef} {...canvas} />;
   },
 };
