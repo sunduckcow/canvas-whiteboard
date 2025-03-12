@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { RefreshCcw } from "lucide-react";
+import { RefreshCcw, Trash2Icon } from "lucide-react";
 import { useRef } from "react";
 
 import { Canvas } from "./Canvas";
@@ -17,8 +17,8 @@ const meta = {
   component: Canvas,
   parameters: { layout: "centered" },
   args: {
-    canvasHeight: 340,
-    canvasWidth: 340,
+    canvasHeight: 300,
+    canvasWidth: 300,
   },
 } satisfies Meta<typeof Canvas>;
 
@@ -84,36 +84,50 @@ export const Grid: Story = {
 export const SimplePoints: Story = {
   render: function Render(args) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const { points, selection } = usePoints({ canvasRef });
+    const { points, selection, deleteSelected } = usePoints({ canvasRef });
 
     const canvas = useCanvas({
       canvasRef,
       ...args,
-      script: (ctx, { tools }) => {
-        ctx.lineWidth = 2;
-        if (selection) {
-          ctx.strokeStyle = "gray";
-          tools.rect(selection.x1, selection.y1, selection.x2, selection.y2);
-        }
-        points.forEach(({ x, y, hovered, selected }) => {
-          if (hovered) {
-            if (selected) {
-              ctx.strokeStyle = "lightblue";
-            } else {
-              ctx.strokeStyle = "lightgreen";
-            }
-          } else {
-            if (selected) {
-              ctx.strokeStyle = "blue";
-            } else {
-              ctx.strokeStyle = "green";
-            }
+      script: [
+        upscalePlugin(3),
+        (ctx, { tools }) => {
+          ctx.lineWidth = 2;
+          if (selection) {
+            ctx.strokeStyle = "gray";
+            tools.rect(selection.x1, selection.y1, selection.x2, selection.y2);
           }
+          points.forEach(({ x, y, hovered, selected }) => {
+            ctx.lineWidth = 1;
+            if (hovered) {
+              if (selected) {
+                ctx.strokeStyle = "lightblue";
+              } else {
+                ctx.strokeStyle = "lightgreen";
+              }
+            } else {
+              if (selected) {
+                ctx.strokeStyle = "blue";
+              } else {
+                ctx.strokeStyle = "green";
+              }
+            }
 
-          tools.cross(x, y);
-        });
-      },
+            tools.cross(x, y, 10);
+            tools.circle(x, y, 10);
+          });
+        },
+      ],
     });
-    return <RawCanvas canvasRef={canvasRef} {...canvas} />;
+    return (
+      <div className="[&>:not(:first-child)]:mt-8">
+        <Button onClick={deleteSelected}>
+          <Trash2Icon />
+          Delete
+        </Button>
+
+        <RawCanvas canvasRef={canvasRef} {...canvas} />
+      </div>
+    );
   },
 };

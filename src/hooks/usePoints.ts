@@ -43,7 +43,15 @@ export interface Rectangle {
   y2: number;
 }
 
-const examplePoints: PointView[] = [{ x: 100, y: 100 }];
+function pointGrid(width: number, height: number, distance: number): Point[] {
+  const res: Point[] = [];
+  for (let x = distance; x <= width - distance; x += distance)
+    for (let y = distance; y <= height - distance; y += distance)
+      res.push({ x, y });
+  return res;
+}
+// const examplePoints: PointView[] = [{ x: 100, y: 100 }];
+const examplePoints: PointView[] = pointGrid(300, 300, 50);
 
 export interface UsePointsProps {
   canvasRef: RefObject<HTMLCanvasElement | null>;
@@ -53,10 +61,7 @@ export interface UsePointsProps {
 export const usePoints = ({
   canvasRef,
   initialPoints = examplePoints,
-}: UsePointsProps): {
-  points: PointView[];
-  selection?: Rectangle | null;
-} => {
+}: UsePointsProps) => {
   const [points, setPoints] = useState<Point[]>(initialPoints);
   const [hovered, setHovered] = useState(-1);
   const [selected, setSelected] = useState<number[]>([]);
@@ -67,6 +72,11 @@ export const usePoints = ({
   const [dragEnd, setDragEnd] = useState<Point | null>(null);
 
   const [relation, setRelation] = useState<Point[] | null>(null);
+
+  const deleteSelected = useCallback(() => {
+    setPoints((prev) => prev.filter((_p, idx) => !selected.includes(idx)));
+    setSelected([]);
+  }, [selected]);
 
   const pushPoint = useCallback(
     (p: Point) => setPoints((prev) => [...prev, p]),
@@ -88,7 +98,7 @@ export const usePoints = ({
         setDragStart({ x, y });
         const pointIndex = points.findIndex((p) => isPointNear(p, x, y));
         setDragStartPoint(pointIndex);
-        // full copy workaround since here we cant get updated selected state
+        // FIXME: full copy workaround since here we cant get updated selected state
         setRelation(points.map((point) => ({ ...point })));
 
         const clickedPoint = pointIndex >= 0;
@@ -170,11 +180,10 @@ export const usePoints = ({
           setSelected([dragStartPoint]);
         }
         if (didMove && !clickedPoint && dragStart && dragEnd) {
-          const selectedIdxs = points
-            .map((point, idx) =>
-              isPointInRect(point, dragStart, dragEnd) ? idx : null
-            )
-            .filter((point) => point !== null);
+          const selectedIdxs = points.reduce<number[]>((acc, point, idx) => {
+            if (isPointInRect(point, dragStart, dragEnd)) acc.push(idx);
+            return acc;
+          }, []);
           if (shiftKey) {
             addSelected(selectedIdxs);
           } else {
@@ -188,6 +197,7 @@ export const usePoints = ({
       dragEnd,
       dragStart,
       dragStartPoint,
+      dragStartPointSelected,
       points,
       pushPoint,
       relation,
@@ -200,9 +210,17 @@ export const usePoints = ({
 
   return useMemo(
     () => ({
+      deleteSelected,
       points: points.map((point, idx) => ({
         ...point,
-        hovered: idx === hovered,
+        hovered:
+          idx === hovered ||
+          Boolean(
+            !(dragStartPoint >= 0) &&
+              dragStart &&
+              dragEnd &&
+              isPointInRect(point, dragStart, dragEnd)
+          ),
         selected: selected.includes(idx),
       })),
       selection:
@@ -215,6 +233,14 @@ export const usePoints = ({
             }
           : null,
     }),
-    [points, dragStart, dragEnd, dragStartPoint, hovered, selected]
+    [
+      deleteSelected,
+      points,
+      dragStart,
+      dragEnd,
+      dragStartPoint,
+      hovered,
+      selected,
+    ]
   );
 };
