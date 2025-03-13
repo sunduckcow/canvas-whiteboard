@@ -1,6 +1,6 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
 
-import { useEventListeners } from "./useEventListeners";
+import { EventListeners, useEventListeners } from "./useEventListeners";
 
 export const getRealCoordinates = (e: MouseEvent, parent: HTMLElement) => {
   const { clientX, clientY } = e;
@@ -33,25 +33,30 @@ export function useGestures({
     setPosition({ x: _x, y: _y, z: _z });
   }, [_x, _y, _z, setPosition]);
 
-  useEventListeners(wrapperRef, {
-    wheel: (e, { x: deltaX, y: deltaY }) => {
-      e.preventDefault();
-      if (e.ctrlKey) {
-        const zoom = Math.exp(-e.deltaY / (100 / speed));
-        setPosition(({ x, y, z }) => ({
-          x: x * zoom + deltaX * (1 - zoom),
-          y: y * zoom + deltaY * (1 - zoom),
-          z: z * zoom,
-        }));
-      } else {
-        setPosition(({ x, y, z }) => ({
-          x: x - e.deltaX * speed,
-          y: y - e.deltaY * speed,
-          z,
-        }));
-      }
-    },
-  });
+  const listeners = useMemo<EventListeners>(
+    () => ({
+      wheel: (e, { x: deltaX, y: deltaY }) => {
+        e.preventDefault();
+        if (e.ctrlKey) {
+          const zoom = Math.exp(-e.deltaY / (100 / speed));
+          setPosition(({ x, y, z }) => ({
+            x: x * zoom + deltaX * (1 - zoom),
+            y: y * zoom + deltaY * (1 - zoom),
+            z: z * zoom,
+          }));
+        } else {
+          setPosition(({ x, y, z }) => ({
+            x: x - e.deltaX * speed,
+            y: y - e.deltaY * speed,
+            z,
+          }));
+        }
+      },
+    }),
+    [speed]
+  );
+
+  useEventListeners(wrapperRef, listeners);
 
   return { x, y, z, wrapperRef, reset, setPosition };
 }

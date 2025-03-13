@@ -37,9 +37,7 @@ export function useCanvas({
 
     const drawScripts = resolveScripts(resetPlugin(), plugins, script);
 
-    drawScripts.forEach((drawScript) => {
-      drawScript(ctx, drawContext);
-    });
+    drawScripts.forEach((drawScript) => drawScript(ctx, drawContext));
   }, [script, box, plugins, ref]);
 
   return { box, ref };

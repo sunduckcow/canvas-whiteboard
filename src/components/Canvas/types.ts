@@ -7,8 +7,10 @@ import type {
 import type { Tools } from "@/utils/tools";
 import { Paralyze } from "@/utils/utility-types";
 
+export type CanvasRef = RefObject<HTMLCanvasElement | null>;
+
 export interface UseCanvasProps {
-  ref: RefObject<HTMLCanvasElement | null>;
+  ref: CanvasRef;
   script?: Script | Script[];
   canvasWidth?: ComponentProps<"canvas">["width"];
   canvasHeight?: ComponentProps<"canvas">["height"];
