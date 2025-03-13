@@ -120,11 +120,12 @@ export const machine = setup({
     }),
   },
   guards: {
-    // onPoint: ({ context, event }) => hasNear(context.entities, event.point),
     moved: ({ context, event }) =>
       Boolean(context.start && !near(event.point, context.start, 5)),
-    startOnPoint: ({ context }) =>
-      Boolean(context.held && context.held.index >= 0),
+    held: ({ context }) => Boolean(context.held),
+    heldSelected: ({ context }) => Boolean(context.held?.wasSelected),
+    shift: ({ event }) => event.shiftKey,
+    emptySelection: ({ context }) => context.selected.size === 0,
   },
 }).createMachine({
   context: ({ input }) => ({
@@ -150,10 +151,10 @@ export const machine = setup({
           target: "hold",
           actions: [
             "setStart",
-            enqueueActions(({ enqueue, context, event }) => {
+            enqueueActions(({ enqueue, context, check }) => {
               const held = context.held;
-              if (!held || held.index === -1 || held.wasSelected) return;
-              if (event.shiftKey) {
+              if (!(held && !held.wasSelected)) return;
+              if (check("shift")) {
                 enqueue({ type: "select", params: held.index });
               } else {
                 enqueue({ type: "setSelected", params: [held.index] });
@@ -171,15 +172,29 @@ export const machine = setup({
           description: "if not moved add put point under cursor",
           target: "idle",
           actions: [
-            enqueueActions(({ enqueue, check }) => {
-              if (check(not("startOnPoint"))) enqueue("addPoint");
-            }),
-            enqueueActions(({ context, enqueue }) => {
-              if (context.held && context.held.wasSelected)
-                enqueue({
-                  type: "deselect",
-                  params: { index: context.held?.index },
-                });
+            enqueueActions(({ context, check, enqueue }) => {
+              if (check("held")) {
+                const held = context.held;
+                if (held && held.wasSelected /*check("heldSelected")*/) {
+                  if (check("shift")) {
+                    enqueue({
+                      type: "deselect",
+                      params: { index: held.index },
+                    });
+                  } else {
+                    enqueue({ type: "setSelected", params: [held.index] });
+                  }
+                }
+              } else {
+                enqueue("addPoint");
+                const newId = context.entities.length;
+                if (check("shift")) {
+                  // -> select
+                  enqueue({ type: "select", params: newId }); // -> addSelected
+                } else {
+                  enqueue({ type: "setSelected", params: [newId] });
+                }
+              }
             }),
             "reset",
           ],
@@ -191,7 +206,7 @@ export const machine = setup({
           },
           {
             description: "move selected",
-            guard: "startOnPoint",
+            guard: "held",
             target: "moving",
           },
           {

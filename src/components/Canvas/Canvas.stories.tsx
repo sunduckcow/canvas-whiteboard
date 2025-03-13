@@ -193,7 +193,7 @@ export const StateMachinePoints: Story = {
             </div>
           )} */}
           <div>startNearest: {held?.index || "none"}</div>
-          {/* <div>selected: [{Array.from(context.selected).toString()}]</div> */}
+          <div>selected: [{Array.from(context.selected).toString()}]</div>
           <div>
             region: [{start && pointToString(start)},{" "}
             {end && pointToString(end)}]
