@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useImperativeHandle, useMemo, useRef } from "react";
 
 import { resetScript } from "./constants";
 import { CanvasProps, RawCanvasProps, UseCanvasProps } from "./types";
 import { resolveScripts } from "./utils";
-import type { BaseFC } from "@/lib/utility-types";
 import { cn } from "@/lib/utils";
 import { getTools } from "@/utils/tools";
+import type { BaseFC } from "@/utils/utility-types";
 
 export function useCanvas({
-  canvasRef,
+  ref,
   script,
   canvasWidth,
   canvasHeight,
@@ -23,7 +23,7 @@ export function useCanvas({
   );
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = ref.current;
     if (!canvas) return;
 
     const ctx = canvas.getContext("2d");
@@ -40,15 +40,15 @@ export function useCanvas({
     drawScripts.forEach((drawScript) => {
       drawScript(ctx, drawContext);
     });
-  }, [script, box, plugins, canvasRef]);
+  }, [script, box, plugins, ref]);
 
-  return { box };
+  return { box, ref };
 }
 
 export const RawCanvas: BaseFC<RawCanvasProps> = ({
+  ref,
   children,
   className,
-  canvasRef,
   wrapperRef,
   box,
   ...htmlCanvasProps
@@ -59,7 +59,7 @@ export const RawCanvas: BaseFC<RawCanvasProps> = ({
       style={box}
       className={cn("border-primary border relative box-content", className)}
     >
-      <canvas ref={canvasRef} {...htmlCanvasProps} {...box} />
+      <canvas ref={ref} {...htmlCanvasProps} {...box} />
       {/** TODO: layers = more canvas elements */}
 
       {children}
@@ -67,8 +67,15 @@ export const RawCanvas: BaseFC<RawCanvasProps> = ({
   );
 };
 
-export const Canvas: BaseFC<CanvasProps> = ({ rawCanvasProps, ...props }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const canvas = useCanvas({ canvasRef, ...props });
-  return <RawCanvas {...rawCanvasProps} {...canvas} canvasRef={canvasRef} />;
+export const Canvas: BaseFC<CanvasProps> = ({
+  rawCanvasProps,
+  ref: outerRef,
+  ...props
+}) => {
+  const innerRef = useRef<HTMLCanvasElement>(null);
+  useImperativeHandle(outerRef, () => innerRef.current!, []);
+
+  const canvas = useCanvas({ ref: innerRef, ...props });
+
+  return <RawCanvas {...rawCanvasProps} {...canvas} />;
 };

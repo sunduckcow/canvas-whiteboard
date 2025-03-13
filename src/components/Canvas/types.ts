@@ -1,9 +1,14 @@
-import { ComponentProps, ComponentPropsWithoutRef } from "react";
+import type {
+  ComponentProps,
+  ComponentPropsWithoutRef,
+  RefObject,
+} from "react";
 
 import type { Tools } from "@/utils/tools";
+import { Paralyze } from "@/utils/utility-types";
 
 export interface UseCanvasProps {
-  canvasRef: React.RefObject<HTMLCanvasElement | null>;
+  ref: RefObject<HTMLCanvasElement | null>;
   script?: Script | Script[];
   canvasWidth?: ComponentProps<"canvas">["width"];
   canvasHeight?: ComponentProps<"canvas">["height"];
@@ -11,12 +16,12 @@ export interface UseCanvasProps {
 }
 
 export interface RawCanvasProps extends ComponentPropsWithoutRef<"canvas"> {
-  canvasRef?: React.Ref<HTMLCanvasElement>;
+  ref?: React.Ref<HTMLCanvasElement>;
   wrapperRef?: React.Ref<HTMLDivElement>;
   box?: { width: number; height: number };
 }
 
-export interface CanvasProps extends Omit<UseCanvasProps, "canvasRef"> {
+export interface CanvasProps extends Paralyze<UseCanvasProps, "ref"> {
   rawCanvasProps?: RawCanvasProps;
 }
 

@@ -54,12 +54,12 @@ function pointGrid(width: number, height: number, distance: number): Point[] {
 const examplePoints: PointView[] = pointGrid(300, 300, 50);
 
 export interface UsePointsProps {
-  canvasRef: RefObject<HTMLCanvasElement | null>;
+  ref: RefObject<HTMLCanvasElement | null>;
   initialPoints?: PointView[];
 }
 
 export const usePoints = ({
-  canvasRef,
+  ref,
   initialPoints = examplePoints,
 }: UsePointsProps) => {
   const [points, setPoints] = useState<Point[]>(initialPoints);
@@ -206,7 +206,7 @@ export const usePoints = ({
     ]
   );
 
-  useEventListeners(canvasRef, listeners);
+  useEventListeners(ref, listeners);
 
   return useMemo(
     () => ({

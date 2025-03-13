@@ -3,8 +3,6 @@ import { RefreshCcw, Trash2Icon } from "lucide-react";
 import { useRef } from "react";
 
 import { Canvas } from "./Canvas";
-import { RawCanvas } from "./Canvas";
-import { useCanvas } from "./Canvas";
 import { upscalePlugin } from "./plugins/upscalePlugin";
 import { Button } from "../ui/button";
 import { transformPlugin } from "./plugins/transformPlugin";
@@ -85,42 +83,8 @@ export const Grid: Story = {
 
 export const SimplePoints: Story = {
   render: function Render(args) {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const { points, selection, deleteSelected } = usePoints({ canvasRef });
-
-    const canvas = useCanvas({
-      canvasRef,
-      ...args,
-      script: [
-        upscalePlugin(3),
-        (ctx, { tools }) => {
-          ctx.lineWidth = 2;
-          if (selection) {
-            ctx.strokeStyle = "gray";
-            tools.rect(selection.x1, selection.y1, selection.x2, selection.y2);
-          }
-          points.forEach(({ x, y, hovered, selected }) => {
-            ctx.lineWidth = 1;
-            if (hovered) {
-              if (selected) {
-                ctx.strokeStyle = "lightblue";
-              } else {
-                ctx.strokeStyle = "lightgreen";
-              }
-            } else {
-              if (selected) {
-                ctx.strokeStyle = "blue";
-              } else {
-                ctx.strokeStyle = "green";
-              }
-            }
-
-            tools.cross(x, y, 10);
-            tools.circle(x, y, 10);
-          });
-        },
-      ],
-    });
+    const ref = useRef<HTMLCanvasElement>(null);
+    const { points, selection, deleteSelected } = usePoints({ ref });
     return (
       <div className="[&>:not(:first-child)]:mt-8">
         <Button onClick={deleteSelected}>
@@ -128,7 +92,44 @@ export const SimplePoints: Story = {
           Delete
         </Button>
 
-        <RawCanvas canvasRef={canvasRef} {...canvas} />
+        <Canvas
+          ref={ref}
+          {...args}
+          script={[
+            upscalePlugin(3),
+            (ctx, { tools }) => {
+              ctx.lineWidth = 2;
+              if (selection) {
+                ctx.strokeStyle = "gray";
+                tools.rect(
+                  selection.x1,
+                  selection.y1,
+                  selection.x2,
+                  selection.y2
+                );
+              }
+              points.forEach(({ x, y, hovered, selected }) => {
+                ctx.lineWidth = 1;
+                if (hovered) {
+                  if (selected) {
+                    ctx.strokeStyle = "lightblue";
+                  } else {
+                    ctx.strokeStyle = "lightgreen";
+                  }
+                } else {
+                  if (selected) {
+                    ctx.strokeStyle = "blue";
+                  } else {
+                    ctx.strokeStyle = "green";
+                  }
+                }
+
+                tools.cross(x, y, 10);
+                tools.circle(x, y, 10);
+              });
+            },
+          ]}
+        />
       </div>
     );
   },
@@ -136,48 +137,10 @@ export const SimplePoints: Story = {
 
 export const StateMachinePoints: Story = {
   render: function Render(args) {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
-    const { context, value } = usePointsMachine({
-      canvasRef,
-    });
+    const ref = useRef<HTMLCanvasElement>(null);
+    const { context, value } = usePointsMachine({ ref });
     const { start, end, entities, held } = context;
 
-    const canvas = useCanvas({
-      canvasRef,
-      ...args,
-      script: [
-        upscalePlugin(3),
-        (ctx, { tools }) => {
-          ctx.lineWidth = 1;
-          if (value === "selecting" && start && end) {
-            ctx.strokeStyle = "gray";
-            tools.rect(start.x, start.y, end.x, end.y);
-          }
-          entities.forEach(({ x, y }, idx) => {
-            const hovered = context.hovered === idx;
-            const selected = context.selected.has(idx);
-
-            ctx.lineWidth = 1;
-            if (hovered) {
-              if (selected) {
-                ctx.strokeStyle = "lightblue";
-              } else {
-                ctx.strokeStyle = "lightgreen";
-              }
-            } else {
-              if (selected) {
-                ctx.strokeStyle = "blue";
-              } else {
-                ctx.strokeStyle = "green";
-              }
-            }
-
-            tools.cross(x, y, 10);
-            tools.circle(x, y, 10);
-          });
-        },
-      ],
-    });
     return (
       <div className="[&>:not(:first-child)]:mt-8">
         <div>
@@ -205,7 +168,42 @@ export const StateMachinePoints: Story = {
           Delete
         </Button> */}
 
-        <RawCanvas canvasRef={canvasRef} {...canvas} />
+        <Canvas
+          ref={ref}
+          {...args}
+          script={[
+            upscalePlugin(3),
+            (ctx, { tools }) => {
+              ctx.lineWidth = 1;
+              if (value === "selecting" && start && end) {
+                ctx.strokeStyle = "gray";
+                tools.rect(start.x, start.y, end.x, end.y);
+              }
+              entities.forEach(({ x, y }, idx) => {
+                const hovered = context.hovered === idx;
+                const selected = context.selected.has(idx);
+
+                ctx.lineWidth = 1;
+                if (hovered) {
+                  if (selected) {
+                    ctx.strokeStyle = "lightblue";
+                  } else {
+                    ctx.strokeStyle = "lightgreen";
+                  }
+                } else {
+                  if (selected) {
+                    ctx.strokeStyle = "blue";
+                  } else {
+                    ctx.strokeStyle = "green";
+                  }
+                }
+
+                tools.cross(x, y, 10);
+                tools.circle(x, y, 10);
+              });
+            },
+          ]}
+        />
       </div>
     );
   },

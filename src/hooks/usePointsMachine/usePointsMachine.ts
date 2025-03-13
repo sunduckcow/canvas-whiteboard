@@ -16,11 +16,11 @@ function pointGrid(width: number, height: number, distance: number): Point[] {
 const examplePoints: Point[] = pointGrid(300, 300, 100);
 
 export interface UsePointsProps {
-  canvasRef: RefObject<HTMLCanvasElement | null>;
+  ref: RefObject<HTMLCanvasElement | null>;
   initialEntities?: Point[];
 }
 export const usePointsMachine = ({
-  canvasRef,
+  ref,
   initialEntities = examplePoints,
 }: UsePointsProps) => {
   const [snapshot, send] = useMachine(machine, {
@@ -42,7 +42,7 @@ export const usePointsMachine = ({
     }),
     [send]
   );
-  useEventListeners(canvasRef, listeners);
+  useEventListeners(ref, listeners);
 
   return snapshot;
 };
