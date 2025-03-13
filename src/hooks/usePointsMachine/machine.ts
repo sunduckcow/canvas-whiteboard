@@ -48,14 +48,20 @@ export const machine = setup({
     input: {} as MachineInput | void,
   },
   actions: {
+    updateHover: assign({
+      hovered: ({ context, event }) =>
+        findNearIndex(context.entities, event.point),
+    }),
+    resetHover: assign({ hovered: undefined }),
     moveEnd: assign({ end: ({ event }) => event.point }),
     reset: assign({ start: undefined, end: undefined, relations: undefined }),
-    setStart: assign(({ context: { entities, selected }, event }) => {
-      const index = findNearIndex(entities, event.point);
+    setStart: assign(({ context: { entities, selected, hovered }, event }) => {
+      // const index = findNearIndex(entities, event.point);
+      const index = hovered;
       return {
         start: event.point,
         held:
-          index >= 0
+          index !== undefined && index >= 0
             ? {
                 index,
                 point: entities[index],
@@ -75,15 +81,7 @@ export const machine = setup({
     // select: enqueueActions(({ enqueue, check }, params: number[]) => {
     //   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     //   // @ts-expect-error
-    //   if (check("shift")) {
-    //     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //     // @ts-expect-error
-    //     enqueue({ type: "addSelected", params });
-    //   } else {
-    //     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    //     // @ts-expect-error
-    //     enqueue({ type: "setSelected", params });
-    //   }
+    //   if (check("shift")) { enqueue({ type: "addSelected", params }); } else { enqueue({ type: "setSelected", params }); }
     // }),
     deselect: assign(({ context }, params: { index: number }) => {
       context.selected.delete(params.index);
@@ -102,6 +100,13 @@ export const machine = setup({
       regionIds.forEach((i) => selected.add(i));
       return { selected };
     }),
+    // selectInRegion: enqueueActions(({ context: { start, end, entities }, enqueue }) => {
+    //   if (!start || !end) return {};
+    //   const regionIds = entities.reduce<number[]>((acc, p, i) => { if (inReact(p, start, end)) acc.push(i); return acc; }, []);
+    //   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //   // @ts-expect-error
+    //   enqueue({ type: "select", params: regionIds });
+    // }),
     setRelations: assign({
       relations: ({ context: { selected, entities } }) =>
         Array.from(selected).reduce<Record<number, Point>>((acc, id) => {
@@ -177,6 +182,9 @@ export const machine = setup({
             "setRelations",
           ],
         },
+        "mouse.move": {
+          actions: "updateHover",
+        },
       },
     },
 
@@ -202,6 +210,7 @@ export const machine = setup({
               } else {
                 enqueue("addPoint");
                 const newId = context.entities.length;
+                enqueue.assign({ hovered: newId });
                 // enqueue({ type: "select", params: [newId] });
                 if (check("shift")) {
                   enqueue({ type: "addSelected", params: [newId] });
