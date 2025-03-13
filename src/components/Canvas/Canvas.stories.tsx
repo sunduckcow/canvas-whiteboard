@@ -3,11 +3,11 @@ import { RefreshCcw, Trash2Icon } from "lucide-react";
 import { useRef } from "react";
 
 import { Canvas } from "./Canvas";
+import { RawCanvas } from "./Canvas";
+import { useCanvas } from "./Canvas";
 import { upscalePlugin } from "./plugins/upscalePlugin";
-import { RawCanvas } from "./RawCanvas";
 import { Button } from "../ui/button";
 import { transformPlugin } from "./plugins/transformPlugin";
-import { useCanvas } from "./useCanvas";
 import { useGestures } from "@/hooks/useGestures";
 import { usePoints } from "@/hooks/usePoints";
 import { usePointsMachine } from "@/hooks/usePointsMachine/usePointsMachine";
