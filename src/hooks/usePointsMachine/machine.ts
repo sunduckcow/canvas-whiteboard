@@ -35,7 +35,6 @@ interface MachineMouseEvent<T extends string>
   point: Point;
   shiftKey: boolean;
 }
-// interface MachineKeyEvent<T extends string> extends MachineEvent<T> { key: string; }
 
 type Events =
   | MachineMouseEvent<"down">
@@ -69,9 +68,23 @@ export const machine = setup({
       entities: ({ context, event }) => [...context.entities, event.point],
     }),
     setSelected: assign((_, ids: number[]) => ({ selected: new Set(ids) })),
-    select: assign(({ context }, id: number) => ({
-      selected: context.selected.add(id),
+    addSelected: assign(({ context }, ids: number[]) => ({
+      selected: context.selected.union(new Set(ids)),
     })),
+    // // https://github.com/statelyai/xstate/issues/4820
+    // select: enqueueActions(({ enqueue, check }, params: number[]) => {
+    //   // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //   // @ts-expect-error
+    //   if (check("shift")) {
+    //     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //     // @ts-expect-error
+    //     enqueue({ type: "addSelected", params });
+    //   } else {
+    //     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+    //     // @ts-expect-error
+    //     enqueue({ type: "setSelected", params });
+    //   }
+    // }),
     deselect: assign(({ context }, params: { index: number }) => {
       context.selected.delete(params.index);
       return {
@@ -154,8 +167,9 @@ export const machine = setup({
             enqueueActions(({ enqueue, context, check }) => {
               const held = context.held;
               if (!(held && !held.wasSelected)) return;
+              // enqueue({ type: "select", params: [held.index] });
               if (check("shift")) {
-                enqueue({ type: "select", params: held.index });
+                enqueue({ type: "addSelected", params: [held.index] });
               } else {
                 enqueue({ type: "setSelected", params: [held.index] });
               }
@@ -188,9 +202,9 @@ export const machine = setup({
               } else {
                 enqueue("addPoint");
                 const newId = context.entities.length;
+                // enqueue({ type: "select", params: [newId] });
                 if (check("shift")) {
-                  // -> select
-                  enqueue({ type: "select", params: newId }); // -> addSelected
+                  enqueue({ type: "addSelected", params: [newId] });
                 } else {
                   enqueue({ type: "setSelected", params: [newId] });
                 }
