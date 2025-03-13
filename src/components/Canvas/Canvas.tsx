@@ -1,6 +1,6 @@
 import { useEffect, useImperativeHandle, useMemo, useRef } from "react";
 
-import { resetScript } from "./constants";
+import { resetPlugin } from "./plugins";
 import { CanvasProps, RawCanvasProps, UseCanvasProps } from "./types";
 import { resolveScripts } from "./utils";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,7 @@ export function useCanvas({
 
     const drawContext = { box, tools };
 
-    const drawScripts = resolveScripts(resetScript, plugins, script);
+    const drawScripts = resolveScripts(resetPlugin(), plugins, script);
 
     drawScripts.forEach((drawScript) => {
       drawScript(ctx, drawContext);

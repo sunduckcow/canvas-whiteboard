@@ -25,8 +25,6 @@ export interface CanvasProps extends Paralyze<UseCanvasProps, "ref"> {
   rawCanvasProps?: RawCanvasProps;
 }
 
-export type CanvasPlugin<Props = unknown> = (props: Props) => Script;
-
 export type Box = { width: number; height: number };
 
 export type Script = (
@@ -36,3 +34,5 @@ export type Script = (
     tools: Tools;
   }
 ) => void;
+
+export type CanvasPlugin<Props = unknown> = (props: Props) => Script;

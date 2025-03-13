@@ -1,4 +1,12 @@
-import { CanvasPlugin } from "../types";
+import { CanvasPlugin } from "./types";
+import { Position } from "@/hooks/useGestures";
+
+export const resetPlugin: CanvasPlugin<void> =
+  () =>
+  (ctx, { box: { width, height } }) => {
+    ctx.reset();
+    ctx.clearRect(0, 0, width, height);
+  };
 
 export const upscalePlugin: CanvasPlugin<
   void | number | { x?: number; y?: number }
@@ -19,4 +27,11 @@ export const upscalePlugin: CanvasPlugin<
     }
 
     ctx.scale(scaleX, scaleY);
+  };
+
+export const transformPlugin: CanvasPlugin<Position> =
+  ({ x, y, z }) =>
+  (ctx) => {
+    ctx.translate(x, y);
+    ctx.scale(z, z);
   };
