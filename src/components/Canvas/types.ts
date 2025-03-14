@@ -5,16 +5,16 @@ import type {
 } from "react";
 
 import type { Tools } from "@/utils/tools";
-import { Paralyze } from "@/utils/utility-types";
+import { OneOrArray, Paralyze, Prettify } from "@/utils/utility-types";
 
 export type CanvasRef = RefObject<HTMLCanvasElement | null>;
 
-export interface UseCanvasProps {
+export interface UseCanvasProps<Plugins extends DefaultPlugins> {
   ref: CanvasRef;
-  script?: Script | Script[];
+  script?: OneOrArray<Script<Artifacts<Plugins>, void>>;
   canvasWidth?: ComponentProps<"canvas">["width"];
   canvasHeight?: ComponentProps<"canvas">["height"];
-  plugins?: ReturnType<CanvasPlugin>[];
+  plugins?: Plugins;
 }
 
 export interface RawCanvasProps extends ComponentPropsWithoutRef<"canvas"> {
@@ -23,18 +23,48 @@ export interface RawCanvasProps extends ComponentPropsWithoutRef<"canvas"> {
   box?: { width: number; height: number };
 }
 
-export interface CanvasProps extends Paralyze<UseCanvasProps, "ref"> {
+export interface CanvasProps<TPlugins extends DefaultPlugins>
+  extends Paralyze<UseCanvasProps<TPlugins>, "ref"> {
   rawCanvasProps?: RawCanvasProps;
 }
 
 export type Box = { width: number; height: number };
 
-export type Script = (
+export type Script<Artifacts, Artifact> = (
   ctx: CanvasRenderingContext2D,
   context: {
     box: Box;
     tools: Tools;
-  }
-) => void;
+  },
+  artifacts: Artifacts
+) => Artifact;
 
-export type CanvasPlugin<Props = unknown> = (props: Props) => Script;
+export type PluginName = string | number | symbol;
+
+export type Plugin<Name extends PluginName, Artifact> = {
+  name: Name;
+  script: Script<void, Artifact>;
+};
+
+export type PluginFabric<Props, Name extends PluginName, Artifact> = (
+  props: Props
+) => Plugin<Name, Artifact>;
+
+// export type PluginFabric<
+//   Props,
+//   Name extends PluginName,
+//   Artifact
+// > = Props extends unknown
+//   ? () => Plugin<Name, Artifact>
+//   : (props: Props) => Plugin<Name, Artifact>;
+
+export type DefaultPlugins = readonly Plugin<string, unknown>[];
+
+export type Artifacts<Plugins extends DefaultPlugins> = Prettify<{
+  [P in Plugins[number]["name"]]: Extract<
+    Plugins[number],
+    Plugin<P, unknown>
+  >["script"] extends Script<void, infer R>
+    ? R
+    : never;
+}>;

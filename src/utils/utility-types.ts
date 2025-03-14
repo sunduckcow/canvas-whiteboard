@@ -5,3 +5,9 @@ export type BaseFC<P = object> = FC<
 >;
 
 export type Paralyze<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+export type OneOrArray<T> = T | T[];
+
+export type Prettify<T> = {
+  [K in keyof T]: T[K];
+} & {};

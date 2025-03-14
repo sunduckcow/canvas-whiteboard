@@ -52,13 +52,17 @@ export const Grid: Story = {
         <Canvas
           {...args}
           rawCanvasProps={{ wrapperRef }}
+          plugins={[upscalePlugin(), transformPlugin({ x, y, z })]}
           script={[
-            upscalePlugin(),
-            (ctx, { box, tools }) => {
+            (ctx, { box, tools }, { upscale }) => {
+              const prevTransform = ctx.getTransform();
+              ctx.setTransform(upscale);
+
               ctx.strokeStyle = "gray";
               tools.xoy({ x, y, z, ...box });
+
+              ctx.setTransform(prevTransform);
             },
-            transformPlugin({ x, y, z }),
             (ctx, { box: { width, height }, tools }) => {
               const n = 10;
               const step = 10;
@@ -79,12 +83,14 @@ export const Grid: Story = {
       </div>
     );
   },
+  // args: { script: [] },
 };
 
 export const SimplePoints: Story = {
   render: function Render(args) {
     const ref = useRef<HTMLCanvasElement>(null);
     const { points, selection, deleteSelected } = usePoints({ ref });
+
     return (
       <div className="[&>:not(:first-child)]:mt-8">
         <Button onClick={deleteSelected}>
@@ -95,10 +101,10 @@ export const SimplePoints: Story = {
         <Canvas
           ref={ref}
           {...args}
+          plugins={[upscalePlugin(3)]}
           script={[
-            upscalePlugin(3),
             (ctx, { tools }) => {
-              ctx.lineWidth = 2;
+              ctx.lineWidth = 1;
               if (selection) {
                 ctx.strokeStyle = "gray";
                 tools.rect(
@@ -171,8 +177,98 @@ export const StateMachinePoints: Story = {
         <Canvas
           ref={ref}
           {...args}
+          plugins={[upscalePlugin(3)]}
           script={[
-            upscalePlugin(3),
+            (ctx, { tools }) => {
+              ctx.lineWidth = 1;
+              if (value === "selecting" && start && end) {
+                ctx.strokeStyle = "gray";
+                tools.rect(start.x, start.y, end.x, end.y);
+              }
+              entities.forEach(({ x, y }, idx) => {
+                const hovered = context.hovered === idx;
+                const selected = context.selected.has(idx);
+
+                ctx.lineWidth = 1;
+                if (hovered) {
+                  if (selected) {
+                    ctx.strokeStyle = "lightblue";
+                  } else {
+                    ctx.strokeStyle = "lightgreen";
+                  }
+                } else {
+                  if (selected) {
+                    ctx.strokeStyle = "blue";
+                  } else {
+                    ctx.strokeStyle = "green";
+                  }
+                }
+
+                tools.cross(x, y, 10);
+                tools.circle(x, y, 10);
+              });
+            },
+          ]}
+        />
+      </div>
+    );
+  },
+};
+
+export const StateMachinePanPoints: Story = {
+  render: function Render(args) {
+    const { x, y, z, wrapperRef, reset } = useGestures();
+
+    const ref = useRef<HTMLCanvasElement>(null);
+    const { context, value } = usePointsMachine({ ref });
+    const { start, end, entities, held } = context;
+
+    return (
+      <div className="[&>:not(:first-child)]:mt-8">
+        <div>
+          <div>value: {value}</div>
+
+          {/* {relations && (
+            <div>
+              {Object.entries(relations).map(([id, p]) => (
+                <span>
+                  {id}: {pointToString(p)}
+                </span>
+              ))}
+            </div>
+          )} */}
+          <div>startNearest: {held?.index || "none"}</div>
+          <div>selected: [{Array.from(context.selected).toString()}]</div>
+          <div>
+            region: [{start && pointToString(start)},{" "}
+            {end && pointToString(end)}]
+          </div>
+        </div>
+
+        {/* <Button onClick={() => {}}>
+          <Trash2Icon />
+          Delete
+        </Button> */}
+        <Button onClick={reset}>
+          <RefreshCcw />
+          Reset
+        </Button>
+
+        <Canvas
+          rawCanvasProps={{ wrapperRef }}
+          ref={ref}
+          {...args}
+          plugins={[upscalePlugin(3), transformPlugin({ x, y, z })]}
+          script={[
+            (ctx, { box, tools }, { upscale }) => {
+              const prevTransform = ctx.getTransform();
+              ctx.setTransform(upscale);
+
+              ctx.strokeStyle = "gray";
+              tools.xoy({ x, y, z, ...box });
+
+              ctx.setTransform(prevTransform);
+            },
             (ctx, { tools }) => {
               ctx.lineWidth = 1;
               if (value === "selecting" && start && end) {
