@@ -19,6 +19,7 @@ export function useCanvas<TPlugins extends DefaultPlugins>({
   canvasWidth,
   canvasHeight,
   plugins,
+  noResetPlugin = false,
 }: UseCanvasProps<TPlugins>) {
   const box = useMemo(
     () => ({
@@ -41,15 +42,12 @@ export function useCanvas<TPlugins extends DefaultPlugins>({
 
     const drawContext = { box, tools };
 
-    resetPlugin().script(ctx, drawContext);
+    if (!noResetPlugin) resetPlugin().script(ctx, drawContext);
 
     const artifacts = plugins?.reduce<Partial<Artifacts<TPlugins>>>(
       (acc, plugin) => {
         const artifact = plugin.script(ctx, drawContext);
-        return {
-          ...acc,
-          [plugin.name]: artifact,
-        };
+        return { ...acc, [plugin.name]: artifact };
       },
       {}
     );
@@ -63,7 +61,7 @@ export function useCanvas<TPlugins extends DefaultPlugins>({
         }
       )
     );
-  }, [script, box, plugins, ref]);
+  }, [script, box, plugins, ref, noResetPlugin]);
 
   return { box, ref };
 }

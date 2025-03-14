@@ -15,6 +15,7 @@ export interface UseCanvasProps<Plugins extends DefaultPlugins> {
   canvasWidth?: ComponentProps<"canvas">["width"];
   canvasHeight?: ComponentProps<"canvas">["height"];
   plugins?: Plugins;
+  noResetPlugin?: boolean;
 }
 
 export interface RawCanvasProps extends ComponentPropsWithoutRef<"canvas"> {

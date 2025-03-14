@@ -1,6 +1,6 @@
 import { useMachine } from "@xstate/react";
 import throttle from "lodash/throttle";
-import { RefObject, useMemo } from "react";
+import { RefObject, useCallback, useMemo } from "react";
 
 import { EventListeners, useEventListeners } from "../useEventListeners";
 import { machine, type Point } from "./machine";
@@ -13,10 +13,10 @@ function pointGrid(width: number, height: number, distance: number): Point[] {
   return res;
 }
 
-const examplePoints: Point[] = pointGrid(300, 300, 50);
+export const examplePoints: Point[] = pointGrid(300, 300, 50);
 
 export interface UsePointsProps {
-  ref: RefObject<HTMLCanvasElement | null>;
+  ref: RefObject<HTMLElement | null>;
   initialEntities?: Point[];
 }
 export const usePointsMachine = ({
@@ -32,9 +32,12 @@ export const usePointsMachine = ({
       mousedown: ({ shiftKey }, point) =>
         send({ type: "mouse.down", point, shiftKey }),
       // TODO: somehow connect throttle with fps
-      mousemove: throttle(({ shiftKey }, point) =>
-        send({ type: "mouse.move", point, shiftKey })
+      mousemove: throttle(
+        ({ shiftKey }, point) => send({ type: "mouse.move", point, shiftKey }),
+        10
       ),
+      // mousemove: ({ shiftKey }, point) =>
+      //   send({ type: "mouse.move", point, shiftKey }),
       mouseup: ({ shiftKey }, point) =>
         send({ type: "mouse.up", point, shiftKey }),
       mouseleave: ({ shiftKey }, point) =>
@@ -44,7 +47,7 @@ export const usePointsMachine = ({
   );
   useEventListeners(ref, listeners);
 
-  // const deleteSelected = useCallback(() => send({ type: "delete" }), [send]);
-  // return [snapshot, { deleteSelected }] as const;
-  return snapshot;
+  const deleteSelected = useCallback(() => send({ type: "delete" }), [send]);
+  const restart = useCallback(() => send({ type: "restart" }), [send]);
+  return { deleteSelected, snapshot, restart };
 };

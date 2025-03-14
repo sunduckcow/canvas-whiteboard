@@ -1,6 +1,7 @@
 import { minmax } from "./minmax";
 import { Point } from "@/hooks/useEventListeners";
 import { Position } from "@/hooks/useGestures";
+import { pointToString } from "@/hooks/usePointsMachine/utils";
 
 function* interval(base: number, step: number, begin: number, end: number) {
   const start = base + step * Math.ceil((begin - base) / step);
@@ -105,7 +106,7 @@ export function getTools(ctx: CanvasRenderingContext2D) {
       line(yAxisPos - 5, dashY, yAxisPos + 5, dashY);
   };
 
-  const omTransform = (transform: DOMMatrix, cb: () => void) => {
+  const onTransform = (transform: DOMMatrix, cb: () => void) => {
     const prevTransform = ctx.getTransform();
     ctx.setTransform(transform);
     cb();
@@ -125,8 +126,9 @@ export function getTools(ctx: CanvasRenderingContext2D) {
     grid,
     arrow,
     xoy,
-    omTransform,
+    onTransform,
     transformPoint,
+    pointToString,
   };
 }
 

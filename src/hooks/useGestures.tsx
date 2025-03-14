@@ -35,13 +35,13 @@ export function useGestures({
 
   const listeners = useMemo<EventListeners>(
     () => ({
-      wheel: (e, { x: deltaX, y: deltaY }) => {
+      wheel: (e, { x: px, y: py }) => {
         e.preventDefault();
         if (e.ctrlKey) {
           const zoom = Math.exp(-e.deltaY / (100 / speed));
           setPosition(({ x, y, z }) => ({
-            x: x * zoom + deltaX * (1 - zoom),
-            y: y * zoom + deltaY * (1 - zoom),
+            x: x * zoom + px * (1 - zoom),
+            y: y * zoom + py * (1 - zoom),
             z: z * zoom,
           }));
         } else {
