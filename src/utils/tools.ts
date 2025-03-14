@@ -1,4 +1,5 @@
 import { minmax } from "./minmax";
+import { Point } from "@/hooks/useEventListeners";
 import { Position } from "@/hooks/useGestures";
 
 function* interval(base: number, step: number, begin: number, end: number) {
@@ -104,6 +105,18 @@ export function getTools(ctx: CanvasRenderingContext2D) {
       line(yAxisPos - 5, dashY, yAxisPos + 5, dashY);
   };
 
+  const omTransform = (transform: DOMMatrix, cb: () => void) => {
+    const prevTransform = ctx.getTransform();
+    ctx.setTransform(transform);
+    cb();
+    ctx.setTransform(prevTransform);
+  };
+
+  const transformPoint = (transform: DOMMatrix, { x, y }: Point) => ({
+    x: x * transform.a + y * transform.c + transform.e,
+    y: x * transform.b + y * transform.d + transform.f,
+  });
+
   return {
     line,
     cross,
@@ -112,6 +125,8 @@ export function getTools(ctx: CanvasRenderingContext2D) {
     grid,
     arrow,
     xoy,
+    omTransform,
+    transformPoint,
   };
 }
 

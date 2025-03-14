@@ -13,7 +13,7 @@ function pointGrid(width: number, height: number, distance: number): Point[] {
   return res;
 }
 
-const examplePoints: Point[] = pointGrid(300, 300, 100);
+const examplePoints: Point[] = pointGrid(300, 300, 50);
 
 export interface UsePointsProps {
   ref: RefObject<HTMLCanvasElement | null>;
@@ -44,5 +44,7 @@ export const usePointsMachine = ({
   );
   useEventListeners(ref, listeners);
 
+  // const deleteSelected = useCallback(() => send({ type: "delete" }), [send]);
+  // return [snapshot, { deleteSelected }] as const;
   return snapshot;
 };

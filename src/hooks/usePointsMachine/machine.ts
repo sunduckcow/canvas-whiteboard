@@ -41,6 +41,7 @@ type Events =
   | MachineMouseEvent<"move">
   | MachineMouseEvent<"up">
   | MachineMouseEvent<"leave">;
+// | MachineEvent<"delete">;
 export const machine = setup({
   types: {
     context: {} as MachineContext,
@@ -54,7 +55,12 @@ export const machine = setup({
     }),
     resetHover: assign({ hovered: undefined }),
     moveEnd: assign({ end: ({ event }) => event.point }),
-    reset: assign({ start: undefined, end: undefined, relations: undefined }),
+    reset: assign({
+      start: undefined,
+      end: undefined,
+      relations: undefined,
+      held: undefined,
+    }),
     setStart: assign(({ context: { entities, selected, hovered }, event }) => {
       // const index = findNearIndex(entities, event.point);
       const index = hovered;

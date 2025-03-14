@@ -39,6 +39,7 @@ export const UpscalePlugin: Story = {
   args: { plugins: [upscalePlugin()], script: Simple.args?.script },
 };
 
+// StoryObj<Meta<typeof Canvas<[ReturnType<typeof upscalePlugin>, ReturnType<typeof transformPlugin>]>>>
 export const Grid: Story = {
   render: function Render(args) {
     const { x, y, z, wrapperRef, reset } = useGestures();
@@ -54,15 +55,11 @@ export const Grid: Story = {
           rawCanvasProps={{ wrapperRef }}
           plugins={[upscalePlugin(), transformPlugin({ x, y, z })]}
           script={[
-            (ctx, { box, tools }, { upscale }) => {
-              const prevTransform = ctx.getTransform();
-              ctx.setTransform(upscale);
-
-              ctx.strokeStyle = "gray";
-              tools.xoy({ x, y, z, ...box });
-
-              ctx.setTransform(prevTransform);
-            },
+            (ctx, { box, tools }, { upscale }) =>
+              tools.omTransform(upscale, () => {
+                ctx.strokeStyle = "gray";
+                tools.xoy({ x, y, z, ...box });
+              }),
             (ctx, { box: { width, height }, tools }) => {
               const n = 10;
               const step = 10;
@@ -151,16 +148,6 @@ export const StateMachinePoints: Story = {
       <div className="[&>:not(:first-child)]:mt-8">
         <div>
           <div>value: {value}</div>
-
-          {/* {relations && (
-            <div>
-              {Object.entries(relations).map(([id, p]) => (
-                <span>
-                  {id}: {pointToString(p)}
-                </span>
-              ))}
-            </div>
-          )} */}
           <div>startNearest: {held?.index || "none"}</div>
           <div>selected: [{Array.from(context.selected).toString()}]</div>
           <div>
@@ -168,11 +155,6 @@ export const StateMachinePoints: Story = {
             {end && pointToString(end)}]
           </div>
         </div>
-
-        {/* <Button onClick={() => {}}>
-          <Trash2Icon />
-          Delete
-        </Button> */}
 
         <Canvas
           ref={ref}
@@ -220,24 +202,14 @@ export const StateMachinePanPoints: Story = {
     const { x, y, z, wrapperRef, reset } = useGestures();
 
     const ref = useRef<HTMLCanvasElement>(null);
-    const { context, value } = usePointsMachine({ ref });
+    const { context, value } = usePointsMachine({ ref }); // <- z, y, z (or transform)
     const { start, end, entities, held } = context;
 
     return (
       <div className="[&>:not(:first-child)]:mt-8">
         <div>
           <div>value: {value}</div>
-
-          {/* {relations && (
-            <div>
-              {Object.entries(relations).map(([id, p]) => (
-                <span>
-                  {id}: {pointToString(p)}
-                </span>
-              ))}
-            </div>
-          )} */}
-          <div>startNearest: {held?.index || "none"}</div>
+          <div>startNearest: {held ? held.index : "none"}</div>
           <div>selected: [{Array.from(context.selected).toString()}]</div>
           <div>
             region: [{start && pointToString(start)},{" "}
@@ -245,14 +217,16 @@ export const StateMachinePanPoints: Story = {
           </div>
         </div>
 
-        {/* <Button onClick={() => {}}>
-          <Trash2Icon />
-          Delete
-        </Button> */}
-        <Button onClick={reset}>
-          <RefreshCcw />
-          Reset
-        </Button>
+        <div className="[&>:not(:first-child)]:ml-8">
+          <Button onClick={() => {}}>
+            <Trash2Icon />
+            Delete
+          </Button>
+          <Button onClick={reset}>
+            <RefreshCcw />
+            Reset
+          </Button>
+        </div>
 
         <Canvas
           rawCanvasProps={{ wrapperRef }}
@@ -260,14 +234,21 @@ export const StateMachinePanPoints: Story = {
           {...args}
           plugins={[upscalePlugin(3), transformPlugin({ x, y, z })]}
           script={[
-            (ctx, { box, tools }, { upscale }) => {
-              const prevTransform = ctx.getTransform();
-              ctx.setTransform(upscale);
-
-              ctx.strokeStyle = "gray";
-              tools.xoy({ x, y, z, ...box });
-
-              ctx.setTransform(prevTransform);
+            (ctx, { box, tools }, { upscale }) =>
+              tools.omTransform(upscale, () => {
+                ctx.strokeStyle = "gray";
+                tools.xoy({ x, y, z, ...box });
+              }),
+            (_ctx, { tools, box }, { transform }) => {
+              const p = {
+                x: box.width / 2,
+                y: box.height / 2,
+              };
+              console.log("original point", pointToString(p));
+              console.log(
+                "transformed point",
+                pointToString(tools.transformPoint(transform.inverse(), p))
+              );
             },
             (ctx, { tools }) => {
               ctx.lineWidth = 1;
@@ -298,6 +279,11 @@ export const StateMachinePanPoints: Story = {
                 tools.circle(x, y, 10);
               });
             },
+            (ctx, { tools }, { upscale }) =>
+              tools.omTransform(upscale, () => {
+                ctx.strokeStyle = "tomato";
+                tools.cross(150, 150);
+              }),
           ]}
         />
       </div>
