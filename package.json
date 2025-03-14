@@ -14,6 +14,7 @@
     "inspector": "pnpx node-modules-inspector"
   },
   "dependencies": {
+    "@radix-ui/react-separator": "^1.1.2",
     "@radix-ui/react-slot": "^1.1.2",
     "@tailwindcss/vite": "^4.0.9",
     "@xstate/react": "^5.0.2",
