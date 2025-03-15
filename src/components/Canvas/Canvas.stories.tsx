@@ -6,6 +6,7 @@ import { Canvas } from "./Canvas";
 import { upscalePlugin } from "./plugins";
 import { transformPlugin } from "./plugins";
 import { Button } from "../ui/button";
+import { useEditor } from "@/hooks/useEditor/useEditor";
 import { useGestures } from "@/hooks/useGestures";
 import { useGesturesMachine } from "@/hooks/useGesturesMachine/useGesturesMachine";
 import { usePoints } from "@/hooks/usePoints";
@@ -348,27 +349,16 @@ export const StateMachinePanPoints: Story = {
   },
 };
 
-export const StateMachine2PanPoints: Story = {
+export const CanvasEditor: Story = {
   render: function Render(args) {
     const ref = useRef<HTMLDivElement>(null);
     const {
-      snapshot: {
-        context: { x, y, z },
-      },
-      restart: gesturesRestart,
-    } = useGesturesMachine({ ref });
-
-    const {
       snapshot: { context, value },
+      restart,
       deleteSelected,
-      restart: pointsRestart,
-    } = usePointsMachine({ ref }); // <- z, y, z (or transform) machine friendship
-    const { start, end, entities, held } = context;
+    } = useEditor({ ref });
 
-    const restart = useCallback(() => {
-      gesturesRestart();
-      pointsRestart();
-    }, [gesturesRestart, pointsRestart]);
+    const { x, y, z, start, end, entities, held } = context;
 
     return (
       <div className="[&>:not(:first-child)]:mt-8">
