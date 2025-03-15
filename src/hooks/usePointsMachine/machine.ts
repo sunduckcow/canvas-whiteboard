@@ -1,4 +1,4 @@
-import { assign, enqueueActions, not, setup, assertEvent } from "xstate";
+import { assign, enqueueActions, setup } from "xstate";
 
 import { findNearIndex, inReact, near } from "./utils";
 
@@ -45,10 +45,6 @@ type OtherEvents = MachineEvent<"delete"> | MachineEvent<"restart">;
 
 type Events = MouseEvents | OtherEvents;
 
-// TODO: use params instead of event assertion
-function assertMouseEvent(event: Events): asserts event is MouseEvents {
-  assertEvent(event, ["mouse.down", "mouse.leave", "mouse.move", "mouse.up"]);
-}
 export const machine = setup({
   types: {
     context: {} as MachineContext & { __initial: MachineContext["entities"] },
@@ -57,44 +53,35 @@ export const machine = setup({
   },
   actions: {
     updateHover: assign({
-      hovered: ({ context, event }) => {
-        assertMouseEvent(event);
-        return findNearIndex(context.entities, event.point);
-      },
+      hovered: ({ context }, point: Point) =>
+        findNearIndex(context.entities, point),
     }),
     resetHover: assign({ hovered: undefined }),
-    moveEnd: assign({
-      end: ({ event }) => {
-        assertMouseEvent(event);
-        return event.point;
-      },
-    }),
+    moveEnd: assign({ end: (_, point: Point) => point }),
     reset: assign({
       start: undefined,
       end: undefined,
       relations: undefined,
       held: undefined,
     }),
-    setStart: assign(({ context: { entities, selected, hovered }, event }) => {
-      assertMouseEvent(event);
-      const index = hovered;
-      return {
-        start: event.point,
-        held:
-          index !== undefined && index >= 0
-            ? {
-                index,
-                point: entities[index],
-                wasSelected: selected.has(index),
-              }
-            : undefined,
-      };
-    }),
+    setStart: assign(
+      ({ context: { entities, selected, hovered } }, point: Point) => {
+        const index = hovered;
+        return {
+          start: point,
+          held:
+            index !== undefined && index >= 0
+              ? {
+                  index,
+                  point: entities[index],
+                  wasSelected: selected.has(index),
+                }
+              : undefined,
+        };
+      }
+    ),
     addPoint: assign({
-      entities: ({ context, event }) => {
-        assertMouseEvent(event);
-        return [...context.entities, event.point];
-      },
+      entities: ({ context }, point: Point) => [...context.entities, point],
     }),
     setSelected: assign((_, ids: number[]) => ({ selected: new Set(ids) })),
     addSelected: assign(({ context }, ids: number[]) => ({
@@ -112,15 +99,14 @@ export const machine = setup({
         selected: context.selected,
       };
     }),
-    selectInRegion: assign(({ context, event }) => {
-      assertMouseEvent(event);
+    selectInRegion: assign(({ context }, shift: boolean) => {
       const { start, end, entities, selected } = context;
       if (!start || !end) return {};
       const regionIds = entities.reduce<number[]>((acc, p, i) => {
         if (inReact(p, start, end)) acc.push(i);
         return acc;
       }, []);
-      if (!event.shiftKey) return { selected: new Set(regionIds) };
+      if (!shift) return { selected: new Set(regionIds) };
       regionIds.forEach((i) => selected.add(i));
       return { selected };
     }),
@@ -139,15 +125,10 @@ export const machine = setup({
         }, {}),
     }),
     moveSelected: assign({
-      entities: ({
-        context: { entities, relations, selected, start },
-        event,
-      }) => {
-        assertMouseEvent(event);
-        const {
-          point: { x, y },
-        } = event;
-
+      entities: (
+        { context: { entities, relations, selected, start } },
+        { x, y }: Point
+      ) => {
         if (!relations || !start) return entities;
         const newEntities = [...entities];
         Array.from(selected).forEach((idx) => {
@@ -180,16 +161,12 @@ export const machine = setup({
     })),
   },
   guards: {
-    moved: ({ context, event }) => {
-      assertMouseEvent(event);
-      return Boolean(context.start && !near(event.point, context.start, 5));
+    moved: ({ context }, point: Point) => {
+      return Boolean(context.start && !near(point, context.start, 5));
     },
     held: ({ context }) => Boolean(context.held),
     heldSelected: ({ context }) => Boolean(context.held?.wasSelected),
-    shift: ({ event }) => {
-      assertMouseEvent(event);
-      return event.shiftKey;
-    },
+    shift: ({ event }) => "shiftKey" in event && event.shiftKey,
     emptySelection: ({ context }) => context.selected.size === 0,
   },
 }).createMachine({
@@ -218,7 +195,7 @@ export const machine = setup({
         "mouse.down": {
           target: "hold",
           actions: [
-            "setStart",
+            { type: "setStart", params: ({ event }) => event.point },
             enqueueActions(({ enqueue, context, check }) => {
               const held = context.held;
               if (!(held && !held.wasSelected)) return;
@@ -233,7 +210,7 @@ export const machine = setup({
           ],
         },
         "mouse.move": {
-          actions: "updateHover",
+          actions: { type: "updateHover", params: ({ event }) => event.point },
         },
       },
     },
@@ -244,7 +221,7 @@ export const machine = setup({
           description: "if not moved add put point under cursor",
           target: "idle",
           actions: [
-            enqueueActions(({ context, check, enqueue }) => {
+            enqueueActions(({ context, check, enqueue, event }) => {
               if (check("held")) {
                 const held = context.held;
                 if (held && held.wasSelected /*check("heldSelected")*/) {
@@ -258,7 +235,7 @@ export const machine = setup({
                   }
                 }
               } else {
-                enqueue("addPoint");
+                enqueue({ type: "addPoint", params: event.point });
                 const newId = context.entities.length;
                 enqueue.assign({ hovered: newId });
                 // enqueue({ type: "select", params: [newId] });
@@ -275,7 +252,7 @@ export const machine = setup({
         "mouse.move": [
           {
             description: "ignore move when small distance",
-            guard: not("moved"),
+            guard: { type: "moved", params: ({ event }) => event.point },
           },
           {
             description: "move selected",
@@ -293,10 +270,13 @@ export const machine = setup({
       on: {
         "mouse.up": {
           target: "idle",
-          actions: ["selectInRegion", "reset"],
+          actions: [
+            { type: "selectInRegion", params: ({ event }) => event.shiftKey },
+            { type: "reset", params: ({ event }) => event.point },
+          ],
         },
         "mouse.move": {
-          actions: "moveEnd",
+          actions: { type: "moveEnd", params: ({ event }) => event.point },
         },
       },
     },
@@ -307,7 +287,10 @@ export const machine = setup({
           actions: "reset",
         },
         "mouse.move": {
-          actions: ["moveEnd", "moveSelected"],
+          actions: [
+            { type: "moveEnd", params: ({ event }) => event.point },
+            { type: "moveSelected", params: ({ event }) => event.point },
+          ],
         },
       },
     },
