@@ -1,11 +1,12 @@
 import { Check, Copy } from "lucide-react";
 import { FC, useState } from "react";
 
+import { safeStringify } from "./cell";
 import { Button } from "@/components/ui/button";
 
-export const RawJson: FC<{ data: object }> = ({ data }) => {
+export const RawJson: FC<{ data: unknown }> = ({ data }) => {
   const [copied, setCopied] = useState(false);
-  const jsonString = JSON.stringify(data, null, 2);
+  const jsonString = safeStringify(data, 2);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(jsonString);

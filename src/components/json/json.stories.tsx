@@ -26,8 +26,15 @@ const sampleData = {
       lat: 40.7128,
       lng: -74.006,
     },
+    inbox: [],
   },
-  tags: ["developer", "designer", "product manager"],
+  tags: [
+    "developer",
+    "designer",
+    "product manager",
+    // "engineer",
+    // "mathematician",
+  ],
   projects: [
     {
       id: 1,
@@ -60,24 +67,84 @@ const sampleData = {
     },
   },
   primitiveArray: [1, 2, 3, 4, 5],
-  mixedArray: [1, "string", true, null, { key: "value" }],
+  mixedArray: [1, "string", true, null, Symbol("title")],
   nullValue: null,
-};
-
-// More on writing stories with args: https://storybook.js.org/docs/writing-stories/args
-export const Primary: Story = {
-  args: {
-    data: sampleData,
-    initialExpanded: true,
-    sections: [
-      { title: "Address Details", path: "address" },
-      { title: "Projects (Table View)", path: "projects" },
-      { title: "Project Alpha Tasks (Table View)", path: "projects.0.tasks" },
-      { title: "Primitive Array (Table View)", path: "primitiveArray" },
-      { title: "Mixed Array", path: "mixedArray" },
-      { title: "Settings", path: "metadata.settings" },
-      { title: "Non-existent Path", path: "some.invalid.path" },
-      { title: "Personal Information", path: "" },
+  primitives: {
+    string: "Hello, world!",
+    number: 42,
+    boolean: true,
+    null: null,
+    undefined: undefined,
+    bigint: BigInt(9007199254740991),
+    symbol: Symbol("description"),
+  },
+  objects: {
+    date: new Date(),
+    regex: /^hello$/i,
+    map: new Map([
+      ["key1", "value1"],
+      ["key2", "value2"],
+    ]),
+    set: new Set([1, 2, 3, 4, 5]),
+  },
+  functions: {
+    arrow: (a: number, b: number) => a + b,
+    regular: function multiply(a: number, b: number) {
+      return a * b;
+    },
+    async: async function fetchData() {
+      return "data";
+    },
+  },
+  arrays: {
+    empty: [],
+    numbers: [1, 2, 3, 4, 5],
+    mixed: [1, "two", { three: 3 }, [4, 5]],
+    objects: [
+      { id: 1, name: "Alice", email: "alice@example.com" },
+      { id: 2, name: "Bob", email: "bob@example.com" },
+      { id: 3, name: "Charlie", email: "charlie@example.com", role: "admin" },
+    ],
+    matrix: [
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
     ],
   },
+  nested: {
+    a: {
+      b: {
+        c: {
+          d: {
+            e: "Deeply nested value",
+          },
+        },
+      },
+    },
+  },
+  compact: { x: 100, y: 150, visible: true },
+  compactArray: [10, 20, 30, 40, 50],
+};
+
+export const Primary: Story = {
+  render: () => (
+    <Json
+      data={sampleData}
+      initialExpand
+      sections={[
+        { title: "Name", path: "name" },
+        { title: "Address Details", path: "address" },
+        { title: "Projects (Table View)", path: "projects" },
+        { title: "Root", path: "" },
+        { title: "Project Alpha Tasks (Table View)", path: "projects.0.tasks" },
+        { title: "Primitive Array (Table View)", path: "primitiveArray" },
+        { title: "Mixed Array", path: "mixedArray" },
+        { title: "Settings", path: "metadata.settings" },
+        { title: "Non-existent Path", path: "some.invalid.path" },
+      ]}
+    />
+  ),
+  // storybook cant handle bigint
+  // https://github.com/storybookjs/storybook/issues/22452
+  args: {} as { data: object },
 };

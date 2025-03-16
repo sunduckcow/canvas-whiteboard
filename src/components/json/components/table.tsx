@@ -10,9 +10,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 export const ArrayTableView: FC<{
-  data: object[];
-  searchTerm: string;
-}> = ({ data, searchTerm }) => {
+  data: unknown[];
+}> = ({ data }) => {
   // If array is empty, show a message
   if (data.length === 0) {
     return (
@@ -42,26 +41,14 @@ export const ArrayTableView: FC<{
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((item, index) => {
-            const valueStr = JSON.stringify(item);
-            const isHighlighted =
-              searchTerm &&
-              valueStr.toLowerCase().includes(searchTerm.toLowerCase());
-
-            return (
-              <TableRow
-                key={index}
-                className={
-                  isHighlighted ? "bg-yellow-100 dark:bg-yellow-900/30" : ""
-                }
-              >
-                <TableCell className="font-medium">{index}</TableCell>
-                <TableCell>
-                  <CellValue value={item} />
-                </TableCell>
-              </TableRow>
-            );
-          })}
+          {data.map((item, index) => (
+            <TableRow key={index}>
+              <TableCell className="font-medium">{index}</TableCell>
+              <TableCell>
+                <CellValue value={item} />
+              </TableCell>
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     );
@@ -80,34 +67,24 @@ export const ArrayTableView: FC<{
           </TableRow>
         </TableHeader>
         <TableBody>
-          {data.map((item, index) => {
-            const rowStr = JSON.stringify(item);
-            const isHighlighted =
-              searchTerm &&
-              rowStr.toLowerCase().includes(searchTerm.toLowerCase());
-
-            return (
-              <TableRow
-                key={index}
-                className={
-                  isHighlighted ? "bg-yellow-100 dark:bg-yellow-900/30" : ""
-                }
-              >
-                <TableCell className="font-medium">{index}</TableCell>
-                {columns.map((column) => (
-                  <TableCell key={column}>
-                    {item && typeof item === "object" && column in item ? (
-                      <CellValue value={item[column]} />
-                    ) : (
-                      <span className="text-neutral-500 dark:text-neutral-400">
-                        —
-                      </span>
-                    )}
-                  </TableCell>
-                ))}
-              </TableRow>
-            );
-          })}
+          {data.map((item, index) => (
+            <TableRow key={index}>
+              <TableCell className="font-medium">{index}</TableCell>
+              {columns.map((column) => (
+                <TableCell key={column}>
+                  {item && typeof item === "object" && column in item ? (
+                    <CellValue
+                      value={(item as Record<string, unknown>)[column]}
+                    />
+                  ) : (
+                    <span className="text-neutral-500 dark:text-neutral-400">
+                      —
+                    </span>
+                  )}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
         </TableBody>
       </Table>
     </div>

@@ -1,35 +1,42 @@
 import get from "lodash/get";
-import { Search } from "lucide-react";
-import { useState } from "react";
 import React from "react";
 
-import { Section } from "./components/section";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { SectionView } from "./components/section";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-type Section = {
+interface InlineOptions {
+  array?: boolean | number;
+  object?: boolean | number;
+  keys?: boolean | number;
+}
+
+interface Globals {
+  initialExpand?: boolean | number;
+  showPath?: boolean;
+  inline?: boolean | InlineOptions;
+  // editable?: string[];
+}
+
+export interface Section extends Globals {
   path?: string;
   title?: string;
-};
+  table?: { columns: string[] | { title: string; key: string }[] };
+  list?: { rows: string[] | { title: string; key: string }[] };
+}
 
-type JsonViewerProps = {
-  data: object;
-  initialExpanded?: boolean;
+interface JsonProps extends Globals {
+  data: unknown;
   className?: string;
   sections?: Section[];
-};
+}
 
 export function Json({
   data,
   className,
-  // initialExpanded = false,
   sections = [{}],
-}: JsonViewerProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [rawView, setRawView] = useState(false);
-
+  ...globals
+}: JsonProps) {
   return (
     <div
       className={cn(
@@ -37,7 +44,7 @@ export function Json({
         className
       )}
     >
-      <div className="flex items-center justify-between border-b p-3">
+      {/* <div className="flex items-center justify-between border-b p-3">
         <h3 className="text-lg font-medium">JSON Viewer</h3>
         <div className="flex items-center gap-2">
           <div className="relative w-64">
@@ -57,22 +64,15 @@ export function Json({
             {rawView ? "Tree View" : "Raw View"}
           </Button>
         </div>
-      </div>
+      </div> */}
 
       {sections.map((section, index) => {
         const sectionData = section.path ? get(data, section.path) : data;
         const isLastSection = index === sections.length - 1;
-        const isArray = Array.isArray(sectionData);
 
         return (
           <React.Fragment key={index}>
-            <Section
-              data={sectionData}
-              title={section.title}
-              path={section.path}
-              raw={rawView}
-              array={isArray}
-            />
+            <SectionView {...globals} {...section} data={sectionData} />
             {!isLastSection && <Separator />}
           </React.Fragment>
         );
