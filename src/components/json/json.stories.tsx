@@ -113,13 +113,22 @@ const sampleData = {
       { id: 2, name: "Bob", email: "bob@example.com" },
       { id: 3, name: "Charlie", email: "charlie@example.com", role: "admin" },
     ],
+  },
+  matrices: {
     matrix: [
       [1, 2, 3],
       [4, 5, 6],
       [7, 8, 9],
     ],
+    hardMatrix: [
+      [1, 2, 3, 4],
+      [5, null, 6, undefined, 7, 8],
+      [null, null, 9, 10, null, 11, 12],
+      [13, 14, null, 15, null, 16],
+    ],
   },
   nested: {
+    root: true,
     a: {
       b: {
         c: {
@@ -130,8 +139,10 @@ const sampleData = {
       },
     },
   },
-  compact: { x: 100, y: 150, visible: true },
-  compactArray: [10, 20, 30, 40, 50],
+  compacts: {
+    object: { x: 100, y: 150, visible: true },
+    array: [10, 20, 30, 40, 50],
+  },
 };
 
 export const Primary: Story = {
@@ -141,9 +152,11 @@ export const Primary: Story = {
       initialExpand
       sections={[
         { title: "Name", path: "name" },
-        { title: "Mixed Array", path: "mixedArray" },
-        { title: "Geometry", path: "geometry" },
         { title: "Nested", path: "nested" },
+        { title: "Compacts", path: "compacts" },
+        { title: "Mixed Array", path: "mixedArray" },
+        { title: "Matrix", path: "matrices" },
+        { title: "Geometry", path: "geometry" },
         { title: "Address Details", path: "address" },
         { title: "Projects (Table View)", path: "projects" },
         { title: "Root", path: "" },

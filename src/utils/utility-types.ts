@@ -11,3 +11,4 @@ export type OneOrArray<T> = T | T[];
 export type Prettify<T> = {
   [K in keyof T]: T[K];
 } & {};
+export type ObjectKey = string | number | symbol;

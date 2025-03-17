@@ -5,6 +5,7 @@ import type {
 } from "react";
 
 import type { Tools } from "@/utils/tools";
+import type { ObjectKey } from "@/utils/utility-types";
 import { OneOrArray, Paralyze, Prettify } from "@/utils/utility-types";
 
 export type CanvasRef = RefObject<HTMLCanvasElement | null>;
@@ -40,7 +41,7 @@ export type Script<Artifacts, Artifact> = (
   artifacts: Artifacts
 ) => Artifact;
 
-export type PluginName = string | number | symbol;
+export type PluginName = ObjectKey;
 
 export type Plugin<Name extends PluginName, Artifact> = {
   name: Name;

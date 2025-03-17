@@ -1,21 +1,39 @@
 import { FC, ReactNode } from "react";
 
-interface View<N> {
-  when: (node: unknown) => node is N;
-  stringify: (node: N) => string;
-  render: (node: N, expanded?: boolean) => ReactNode;
-  fold?: (
-    node: N
-  ) => [string | number | symbol, ReactNode | unknown][] | ReactNode;
+import { ArrayView } from "./array";
+// import { Matrix } from "./matrix";
+// import { JsonNode } from "./node"
+import { ObjectView } from "./object";
+import type { ObjectKey } from "@/utils/utility-types";
+import { Paralyze } from "@/utils/utility-types";
+
+interface View<Node> {
+  when: (node: unknown) => node is Node;
+
+  stringify: (node: Node) => string;
+  render: (node: Node, expanded?: boolean) => ReactNode;
+
+  fold?: (node: Node) => [ObjectKey, unknown][] | ReactNode;
+  compactWhen?: (node: Node) => boolean;
+  compact?: (node: Node) => [ObjectKey, unknown] | ReactNode;
+
+  transformKey: (key: ObjectKey, keys?: number) => string;
+  /** use stringify in safeStringify */
+  serialize?: boolean;
 }
 
-function span<N>(className?: string) {
-  return function (this: View<N>, value: N) {
+function span<Node>(className?: string) {
+  return function (this: View<Node>, value: Node) {
     return <span className={className}>{this.stringify(value)}</span>;
   };
 }
 
-export const createView = <N,>(config: View<N>) => config;
+export const createView = <Node,>(
+  config: Paralyze<View<Node>, "transformKey">
+): View<Node> => ({
+  ...config,
+  transformKey: config.transformKey || defaultTransformKey,
+});
 
 const undefinedView = createView({
   when: (node): node is undefined => typeof node === "undefined",
@@ -52,6 +70,7 @@ const functionView = createView({
   when: (node): node is Function => typeof node === "function",
   stringify: (value) => `ƒ ${getFunctionSignature(value)}`,
   render: span("text-yellow-600 dark:text-yellow-400"),
+  serialize: true,
 });
 
 const symbolView = createView({
@@ -64,42 +83,51 @@ const bigintView = createView({
   when: (node): node is bigint => typeof node === "bigint",
   stringify: (value) => `${value.toString()}n`,
   render: span("text-blue-600 dark:text-blue-400"),
+  serialize: true,
 });
 
 const dateView = createView({
   when: (node): node is Date => node instanceof Date,
   stringify: (value) => value.toISOString(),
   render: span("text-teal-600 dark:text-teal-400"),
+  serialize: true,
 });
 
 const mapView = createView({
   when: (node): node is Map<unknown, unknown> => node instanceof Map,
   stringify: (value) => `Map(${value.size})`,
   render: span("text-indigo-600 dark:text-indigo-400"),
+  serialize: true,
 });
 
 const setView = createView({
   when: (node): node is Set<unknown> => node instanceof Set,
   stringify: (value) => `Set(${value.size})`,
   render: span("text-indigo-600 dark:text-indigo-400"),
+  serialize: true,
 });
 
 const arrayView = createView({
   when: (node): node is Array<unknown> => Array.isArray(node),
-  stringify: (value) => `[ ${value.length} ]`,
+  stringify: (value) => `[] ${value.length} items`,
   render: span("text-gray-600 dark:text-gray-400"), // cursor-pointer hover:underline"
   // fold: Object.entries,
   fold: (value) => value.map((el, i) => [i, el] as [number, unknown]),
+  compactWhen: (value) => value.length <= 5,
+  compact: (value) => <ArrayView data={value} />,
 });
 
 const objectView = createView({
-  when: (node): node is object => typeof node === "object",
-  stringify: (value) => `{ ${Object.keys(value).length} }`,
+  when: (node): node is Record<ObjectKey, unknown> =>
+    typeof node === "object" && node !== null,
+  stringify: (value) => `{} ${Object.keys(value).length} keys`,
   render: span("text-gray-600 dark:text-gray-400"), // cursor-pointer hover:underline"
   fold: Object.entries,
+  compactWhen: (value) => Object.keys(value).length <= 3,
+  compact: (value) => <ObjectView data={value} />,
 });
 
-const fallbackView = createView<unknown>({
+export const fallbackView = createView({
   when: (_node): _node is unknown => true,
   stringify: (value) => String(value),
   render: span(),
@@ -171,10 +199,29 @@ export const hundredView = createView({
   render: span("text-blue-600 dark:text-blue-400"),
 });
 
+// const matrixView = createView({
+//   when: (node): node is unknown[][] =>
+//     Array.isArray(node) &&
+//     node.length > 0 &&
+//     node.every((row) => Array.isArray(row) && row.length > 0),
+//   stringify: () => "",
+//   render: () => "Matrix",
+//   fold: (value) => <Matrix matrix={value} />,
+// });
+
+// const singleKeyObject = createView({
+//   ...objectView,
+//   when: (node): node is object =>
+//     objectView.when(node) && Object.keys(node).length === 1,
+//   compact: (value) => Object.entries(value).pop(),
+// });
+
 export const extendedViews = [
   pointView,
   rectangleView,
   // hundredView,
+  // singleKeyObject,
+  // matrixView,
   ...defaultViews,
 ];
 
@@ -185,30 +232,17 @@ export const CellValue: FC<{ value: unknown }> = ({ value }) => {
   return <span>{String(value)}</span>;
 };
 
+export const findView = (value: unknown, views = extendedViews) => {
+  return views.find((view) => view.when(value)) || fallbackView;
+};
+
 export const safeStringify = (obj: unknown, space?: string | number) =>
   JSON.stringify(obj, jsonReplacer, space);
 
-export function jsonReplacer(_key: string, value: unknown) {
-  if (typeof value === "bigint") {
-    return value.toString() + "n";
-  }
-  if (typeof value === "function") {
-    return `ƒ ${getFunctionSignature(value)}`;
-  }
-  if (typeof value === "symbol") {
-    return value.toString();
-  }
-  if (value instanceof Date) {
-    return `Date(${value.toISOString()})`;
-  }
-  if (value instanceof Map) {
-    return `Map(${value.size})`;
-  }
-  if (value instanceof Set) {
-    return `Set(${value.size})`;
-  }
-  return value;
-}
+export const jsonReplacer = (_key: string, value: unknown) =>
+  extendedViews
+    .find((view) => view.serialize && view.when(value))
+    ?.stringify(value as never) || value;
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
 function getFunctionSignature(func: Function): string {
@@ -227,4 +261,15 @@ function getFunctionSignature(func: Function): string {
   }
 
   return "()";
+}
+
+function defaultTransformKey(key: ObjectKey, count: number = 0): string {
+  switch (typeof key) {
+    case "string":
+      return key;
+    case "symbol":
+      return `[${key.toString()}]`;
+    case "number":
+      return String(key).padStart(Math.ceil(Math.log10(count)), "_"); // &nbsp; ??
+  }
 }

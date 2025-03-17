@@ -1,3 +1,5 @@
+import { ObjectKey } from "@/utils/utility-types";
+
 export const isPrimitive = (arg: unknown) =>
   arg === null || typeof arg !== "object";
 
@@ -9,5 +11,3 @@ export const isRecord = (arg: unknown): arg is Record<ObjectKey, unknown> =>
   !(arg instanceof RegExp) &&
   !(arg instanceof Set) &&
   !(arg instanceof Map);
-
-type ObjectKey = string | number | symbol;
