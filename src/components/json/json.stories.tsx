@@ -17,6 +17,11 @@ const sampleData = {
   name: "John Doe",
   age: 30,
   isActive: true,
+  geometry: {
+    point: { x: 50, y: 50 },
+    rectangle: { x1: 100, y1: 100, x2: 300, y2: 200 },
+    circle: { x: 300, y: 300, r: 50 },
+  },
   address: {
     street: "123 Main St",
     city: "New York",
@@ -96,6 +101,9 @@ const sampleData = {
       return "data";
     },
   },
+  longArray: Array(20)
+    .fill(0)
+    .map((_, i) => i + 1),
   arrays: {
     empty: [],
     numbers: [1, 2, 3, 4, 5],
@@ -133,12 +141,14 @@ export const Primary: Story = {
       initialExpand
       sections={[
         { title: "Name", path: "name" },
+        { title: "Mixed Array", path: "mixedArray" },
+        { title: "Geometry", path: "geometry" },
+        { title: "Nested", path: "nested" },
         { title: "Address Details", path: "address" },
         { title: "Projects (Table View)", path: "projects" },
         { title: "Root", path: "" },
         { title: "Project Alpha Tasks (Table View)", path: "projects.0.tasks" },
         { title: "Primitive Array (Table View)", path: "primitiveArray" },
-        { title: "Mixed Array", path: "mixedArray" },
         { title: "Settings", path: "metadata.settings" },
         { title: "Non-existent Path", path: "some.invalid.path" },
       ]}
@@ -146,5 +156,5 @@ export const Primary: Story = {
   ),
   // storybook cant handle bigint
   // https://github.com/storybookjs/storybook/issues/22452
-  args: {} as { data: object },
+  args: {} as { data: unknown },
 };

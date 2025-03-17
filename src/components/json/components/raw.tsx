@@ -1,7 +1,7 @@
 import { Check, Copy } from "lucide-react";
 import { FC, useState } from "react";
 
-import { safeStringify } from "./cell";
+import { safeStringify } from "./views";
 import { Button } from "@/components/ui/button";
 
 export const RawJson: FC<{ data: unknown }> = ({ data }) => {

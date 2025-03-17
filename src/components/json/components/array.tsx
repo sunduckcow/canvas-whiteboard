@@ -1,6 +1,6 @@
 import { FC } from "react";
 
-import { CellValue } from "./cell";
+import { CellValue } from "./views";
 
 export const ArrayView: FC<{
   data: unknown[];

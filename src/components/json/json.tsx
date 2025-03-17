@@ -4,7 +4,6 @@ import React from "react";
 import { SectionView } from "./components/section";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-
 interface InlineOptions {
   array?: boolean | number;
   object?: boolean | number;
@@ -29,6 +28,8 @@ interface JsonProps extends Globals {
   data: unknown;
   className?: string;
   sections?: Section[];
+  blacklist?: string[];
+  // extensions?: View<unknown>[];
 }
 
 export function Json({

@@ -1,13 +1,12 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { FC, useState } from "react";
 
-import { ArrayView } from "./array";
-import { CellValue } from "./cell";
+import { extendedViews } from "./views";
 import { cn } from "@/lib/utils";
 
 type JsonNodeProps = {
   data: unknown;
-  name?: string;
+  name?: string | symbol | number;
   initialExpanded?: boolean;
   level?: number;
 };
@@ -18,14 +17,15 @@ export const JsonNode: FC<JsonNodeProps> = ({
   initialExpanded = true,
   level = 0,
 }) => {
-  const [expanded, setExpanded] = useState(initialExpanded || !name);
+  const view = extendedViews.find((view) => view.when(data));
 
-  const expandable = typeof data === "object" && data !== null;
+  const expandable = Boolean(view?.fold);
 
-  // if (root) {
-  //   if (expandable) return <RenderChildren data={data} level={level + 1} />;
-  //   return <CellValue value={data} />;
-  // }
+  const [expanded, setExpanded] = useState(
+    expandable ? initialExpanded || !name : false
+  );
+
+  const fold = view?.fold?.(data as never);
 
   return (
     <div className={cn(Boolean(name) && "my-1")}>
@@ -33,7 +33,7 @@ export const JsonNode: FC<JsonNodeProps> = ({
         {Boolean(name) &&
           (expandable ? (
             <button
-              onClick={() => setExpanded(!expanded)}
+              onClick={() => setExpanded((prev) => !prev)}
               className="mr-1 p-0.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
             >
               {expanded ? (
@@ -52,49 +52,37 @@ export const JsonNode: FC<JsonNodeProps> = ({
               <>
                 <span className="text-gray-800 dark:text-gray-200 font-medium">
                   {/* {Array.isArray(data) ? `[${name}]` : name} */}
-                  {name}
+                  {/* view?.replaceKey(data) ???? */}
+                  {typeof name === "symbol" ? `[${name.toString()}]` : name}
                 </span>
                 <span className="mx-1 text-gray-500">:</span>
               </>
             )}
-
-            <span className={cn("mr-2", expandable && "hidden")}>
-              <CellValue value={data} />
-            </span>
-
-            {expandable && (
-              <span className="text-gray-500">
-                {Array.isArray(data)
-                  ? `${expanded ? "" : "[]"} ${data.length} items`
-                  : `${expanded ? "" : "{}"} ${Object.keys(data).length} keys`}
-              </span>
-            )}
+            <span className="mr-2">{view?.render(data as never)}</span>
           </div>
-
           {expandable && expanded && (
             <div className={cn(Boolean(name) && "pl-6")}>
-              <RenderChildren data={data} level={level + 1} />
+              {Array.isArray(fold)
+                ? fold.map(([key, value]) => (
+                    <JsonNode
+                      key={String(key)}
+                      data={value}
+                      name={
+                        typeof key === "number"
+                          ? String(key).padStart(
+                              Math.ceil(Math.log10(fold.length)),
+                              "_" // &nbsp; ??
+                            )
+                          : key
+                      }
+                      level={level + 1}
+                    />
+                  ))
+                : fold}
             </div>
           )}
         </div>
       </div>
     </div>
   );
-};
-
-const RenderChildren = ({ data, level }: { data: object; level: number }) => {
-  if (
-    Array.isArray(data) &&
-    data.every((item) => typeof item !== "object" || item === null)
-  )
-    return <ArrayView data={data} />;
-  const entries = Object.entries(data);
-  if (entries.length === 0)
-    return (
-      <span className="text-gray-500">{Array.isArray(data) ? "[]" : "{}"}</span>
-    );
-
-  return Object.entries(data).map(([key, value]) => (
-    <JsonNode key={key} data={value} name={key} level={level + 1} />
-  ));
 };
