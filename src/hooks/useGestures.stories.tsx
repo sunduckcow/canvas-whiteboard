@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from "@storybook/react";
+import { RefreshCcw } from "lucide-react";
+import { useRef } from "react";
 
 import { useGestures } from "./useGestures";
 import { Button } from "@/components/ui/button";
-import { RefreshCcw } from "lucide-react";
 
 const meta = {
   title: "useGestures",
@@ -13,8 +14,9 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const Primary: Story = {
-  render() {
-    const { x, y, z, ref, reset } = useGestures();
+  render: function Render() {
+    const ref = useRef<HTMLDivElement>(null);
+    const { x, y, z, reset } = useGestures({ ref });
     return (
       <div className="[&>:not(:first-child)]:mt-8">
         <Button onClick={reset}>

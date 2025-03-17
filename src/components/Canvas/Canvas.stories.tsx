@@ -5,6 +5,7 @@ import { useCallback, useRef } from "react";
 import { Canvas } from "./Canvas";
 import { upscalePlugin } from "./plugins";
 import { transformPlugin } from "./plugins";
+import { Json } from "../json/json";
 import { Button } from "../ui/button";
 import { useEditor } from "@/hooks/useEditor/useEditor";
 import { useGestures } from "@/hooks/useGestures";
@@ -41,7 +42,8 @@ export const UpscalePlugin: Story = {
 // StoryObj<Meta<typeof Canvas<[ReturnType<typeof upscalePlugin>, ReturnType<typeof transformPlugin>]>>>
 export const Grid: Story = {
   render: function Render(args) {
-    const { x, y, z, wrapperRef, reset } = useGestures();
+    const ref = useRef<HTMLDivElement>(null);
+    const { x, y, z, reset } = useGestures({ ref });
 
     return (
       <div className="[&>:not(:first-child)]:mt-8">
@@ -51,7 +53,7 @@ export const Grid: Story = {
         </Button>
         <Canvas
           {...args}
-          rawCanvasProps={{ wrapperRef }}
+          rawCanvasProps={{ wrapperRef: ref }}
           plugins={[upscalePlugin(), transformPlugin({ x, y, z })]}
           script={[
             (ctx, { box, tools }, { upscale }) =>
@@ -250,13 +252,14 @@ export const StateMachinePoints: Story = {
 
 export const StateMachinePanPoints: Story = {
   render: function Render(args) {
-    const { x, y, z, wrapperRef, reset } = useGestures();
+    const ref = useRef<HTMLDivElement>(null);
 
+    const { x, y, z, reset } = useGestures({ ref });
     const {
       snapshot: { context, value },
       deleteSelected,
       restart: pointsRestart,
-    } = usePointsMachine({ ref: wrapperRef }); // <- z, y, z (or transform)
+    } = usePointsMachine({ ref }); // <- z, y, z (or transform)
     const { start, end, entities, held } = context;
 
     const restart = useCallback(() => {
@@ -289,7 +292,7 @@ export const StateMachinePanPoints: Story = {
 
         <Canvas
           {...args}
-          rawCanvasProps={{ wrapperRef }}
+          rawCanvasProps={{ wrapperRef: ref }}
           plugins={[upscalePlugin(3), transformPlugin({ x, y, z })]}
           script={[
             (ctx, { box, tools }, { upscale }) =>
@@ -352,17 +355,18 @@ export const StateMachinePanPoints: Story = {
 export const CanvasEditor: Story = {
   render: function Render(args) {
     const ref = useRef<HTMLDivElement>(null);
-    const {
-      snapshot: { context, value },
-      restart,
-      deleteSelected,
-    } = useEditor({ ref });
+    const { snapshot, restart, deleteSelected } = useEditor({ ref });
 
-    const { x, y, z, start, end, entities, held } = context;
+    const { context, value } = snapshot;
+    const { x, y, z, start, end, entities } = context;
 
     return (
       <div className="[&>:not(:first-child)]:mt-8">
-        <div>
+        <Json
+          data={snapshot}
+          sections={[{ path: "value", title: "status" }, { path: "context" }]}
+        />
+        {/* <div>
           <div>value: {value}</div>
           <div>startNearest: {held ? held.index : "none"}</div>
           <div>selected: [{Array.from(context.selected).toString()}]</div>
@@ -370,7 +374,7 @@ export const CanvasEditor: Story = {
             region: [{start && pointToString(start)},{" "}
             {end && pointToString(end)}]
           </div>
-        </div>
+        </div> */}
 
         <div className="[&>:not(:first-child)]:ml-8">
           <Button onClick={deleteSelected}>

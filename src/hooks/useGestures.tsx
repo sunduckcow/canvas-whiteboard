@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useMemo, RefObject } from "react";
 
 import { EventListeners, useEventListeners } from "./useEventListeners";
 
@@ -18,6 +18,7 @@ export interface Position {
 
 interface UseGesturesParams extends Partial<Position> {
   speed?: number;
+  ref: RefObject<HTMLElement | null>;
 }
 
 export function useGestures({
@@ -25,9 +26,8 @@ export function useGestures({
   y: _y = 0,
   z: _z = 1,
   speed = 2,
-}: UseGesturesParams = {}) {
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
+  ref,
+}: UseGesturesParams) {
   const [{ x, y, z }, setPosition] = useState({ x: _x, y: _y, z: _z });
   const reset = useCallback(() => {
     setPosition({ x: _x, y: _y, z: _z });
@@ -56,9 +56,9 @@ export function useGestures({
     [speed]
   );
 
-  useEventListeners(wrapperRef, listeners);
+  useEventListeners(ref, listeners);
 
-  return { x, y, z, wrapperRef, reset, setPosition };
+  return { x, y, z, reset, setPosition };
 }
 
 /**
