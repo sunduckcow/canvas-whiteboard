@@ -1,7 +1,7 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { FC, isValidElement, ReactNode, useState } from "react";
 
-import { findView } from "./views";
+import { defaultTransformKey, findView } from "./views";
 import { cn } from "@/lib/utils";
 import type { ObjectKey } from "@/utils/utility-types";
 
@@ -12,29 +12,35 @@ type JsonNodeProps = {
   compact?: boolean;
   level?: number;
   siblings?: number;
+  recursionLimit?: number;
 };
 
-const debug = true;
+const debug = false;
 
 export const JsonNode: FC<JsonNodeProps> = ({
   data,
   name,
   initialExpanded = true,
-  compact = false,
+  compact = true,
   level = 0,
   siblings,
+  recursionLimit = 7,
 }) => {
   const hasKey = name !== undefined;
 
-  const isReactNode = isValidElement(data);
+  const [foldDepth, setFoldDepth] = useState(Infinity);
 
-  const view = findView(data);
+  const [keys, value] = traverseSingleKeys(name, data, foldDepth);
+
+  const isReactNode = isValidElement(value);
+
+  const view = findView(value);
 
   const expandable = Boolean(view.fold) && !isReactNode;
 
   // const viewCompact = view.compact;
   const hasCompact =
-    view.compact && view.compactWhen && view.compactWhen(data as never);
+    view.compact && view.compactWhen && view.compactWhen(value as never);
 
   // let _initialExpanded = false;
   // if (hasCompact && compact && expandable) {
@@ -45,7 +51,9 @@ export const JsonNode: FC<JsonNodeProps> = ({
     initialExpanded && hasKey ? !(compact && hasCompact) : true
   );
 
-  const fold = isReactNode ? [] : view.fold?.(data as never);
+  const fold = isReactNode ? [] : view.fold?.(value as never);
+
+  // console.log(data, traverseSingleKeys(data));
 
   // const compact = Array.isArray(fold) && fold.length === 1;
 
@@ -68,6 +76,9 @@ export const JsonNode: FC<JsonNodeProps> = ({
   // }
 
   // const compact = siblings === 1;
+
+  if (level >= recursionLimit)
+    return <span className="bg-red-400">Recursion limit exceeded</span>;
 
   return (
     <div
@@ -95,7 +106,7 @@ export const JsonNode: FC<JsonNodeProps> = ({
 
         <div className="flex-1">
           <div className="flex items-center">
-            {hasKey && (
+            {/* {hasKey && (
               <>
                 <span
                   className={cn(
@@ -115,18 +126,54 @@ export const JsonNode: FC<JsonNodeProps> = ({
                   :
                 </span>
               </>
-            )}
+            )} */}
+            {keys.flatMap((key, idx, keys) => {
+              const last = idx === keys.length - 1;
+              const first = idx === 0;
+              return [
+                <span
+                  className={cn(
+                    "text-gray-800 dark:text-gray-200 font-medium",
+                    debug && "border-lime-400 dark:border-lime-600 border-b-2"
+                  )}
+                >
+                  {last
+                    ? view.transformKey(key, 0)
+                    : defaultTransformKey(key, first ? siblings : 0)}
+                </span>,
+
+                <span
+                  className={cn(
+                    "mx-1 text-gray-500 hover:text-gray-500",
+                    debug && "border-gray-500 border-b-2"
+                  )}
+                  // TODO: add unfold back
+                  onClick={() => {
+                    setFoldDepth(idx);
+                    setExpanded(true);
+                  }}
+                >
+                  {last ? ":" : "/"}
+                </span>,
+              ];
+            })}
             <span
               className={cn(
                 debug && "border-amber-200 dark:border-amber-800 border-b-2"
               )}
             >
               {!expanded && hasCompact && compact ? (
-                (view.compact?.(data as never) as ReactNode)
+                (view.compact?.(value as never) as ReactNode)
               ) : (
-                <>{isReactNode ? data : view.render(data as never)}</>
+                <>{isReactNode ? value : view.render(value as never)}</>
               )}
             </span>
+            {/* <span>
+              {keys.map((key) => (
+                <span>{String(key)},</span>
+              ))}
+              <CellValue value={value} />
+            </span> */}
           </div>
           {expandable && expanded && (
             <div className={cn(hasKey && "pl-6")}>
@@ -137,6 +184,8 @@ export const JsonNode: FC<JsonNodeProps> = ({
                       data={value}
                       name={key}
                       level={level + 1}
+                      siblings={fold.length}
+                      recursionLimit={recursionLimit}
                     />
                   ))
                 : fold}
@@ -147,3 +196,23 @@ export const JsonNode: FC<JsonNodeProps> = ({
     </div>
   );
 };
+
+function traverseSingleKeys(
+  initialKey: ObjectKey | undefined,
+  data: unknown,
+  depth = Infinity
+): [ObjectKey[], unknown] {
+  let current = data;
+  const keys: ObjectKey[] = initialKey === undefined ? [] : [initialKey];
+
+  while (typeof current === "object" && current !== null && depth > 0) {
+    const currentKeys = Reflect.ownKeys(current) as ObjectKey[];
+    if (currentKeys.length !== 1) return [keys, current];
+    const key = currentKeys.pop()!;
+    keys.push(key);
+    current = current[key as never];
+    depth--;
+  }
+
+  return [keys, current];
+}

@@ -4,6 +4,7 @@ import { ArrayView } from "./array";
 // import { Matrix } from "./matrix";
 // import { JsonNode } from "./node"
 import { ObjectView } from "./object";
+import { Badge } from "@/components/ui/badge";
 import type { ObjectKey } from "@/utils/utility-types";
 import { Paralyze } from "@/utils/utility-types";
 
@@ -14,7 +15,7 @@ interface View<Node> {
   render: (node: Node, expanded?: boolean) => ReactNode;
 
   fold?: (node: Node) => [ObjectKey, unknown][] | ReactNode;
-  compactWhen?: (node: Node) => boolean;
+  compactWhen?: (node: Node) => boolean; // QUESTION: maybe remove this prop and make compact return value nullable as predicate
   compact?: (node: Node) => [ObjectKey, unknown] | ReactNode;
 
   transformKey: (key: ObjectKey, keys?: number) => string;
@@ -104,6 +105,7 @@ const setView = createView({
   when: (node): node is Set<unknown> => node instanceof Set,
   stringify: (value) => `Set(${value.size})`,
   render: span("text-indigo-600 dark:text-indigo-400"),
+  // compact: (value) => {},
   serialize: true,
 });
 
@@ -113,7 +115,7 @@ const arrayView = createView({
   render: span("text-gray-600 dark:text-gray-400"), // cursor-pointer hover:underline"
   // fold: Object.entries,
   fold: (value) => value.map((el, i) => [i, el] as [number, unknown]),
-  compactWhen: (value) => value.length <= 5,
+  compactWhen: (value) => value.length <= 5 && value.every(isPrimitive),
   compact: (value) => <ArrayView data={value} />,
 });
 
@@ -123,7 +125,8 @@ const objectView = createView({
   stringify: (value) => `{} ${Object.keys(value).length} keys`,
   render: span("text-gray-600 dark:text-gray-400"), // cursor-pointer hover:underline"
   fold: Object.entries,
-  compactWhen: (value) => Object.keys(value).length <= 3,
+  compactWhen: (value) =>
+    Object.keys(value).length <= 3 && Object.values(value).every(isPrimitive),
   compact: (value) => <ObjectView data={value} />,
 });
 
@@ -163,7 +166,7 @@ export const pointView = createView({
     "y" in node &&
     Object.keys(node).length === 2,
   stringify: ({ x, y }) => `p(${Math.round(x)}, ${Math.round(y)})`,
-  render: span("text-emerald-600 dark:text-emerald-400"),
+  render: span("text-violet-600 dark:text-violet-400"),
 });
 
 interface Rect {
@@ -186,8 +189,8 @@ export const rectangleView = createView({
     `r[${Math.round(x1)}, ${Math.round(y1)}, ${Math.round(x2)}, ${Math.round(
       y2
     )}]`,
-  render: span("text-emerald-600 dark:text-emerald-400"),
-  // fold: ({ x1, y1, x2, y2 }) => [
+  render: span("text-sky-600 dark:text-sky-400"),
+  // fold: ({ x1, y1, x2, y2 }) => [ // virtual fold? also usable for urls as strings
   //   ["point 1", { x: x1, y: y1 }],
   //   ["point 2", { x: x2, y: y2 }],
   // ],
@@ -209,12 +212,28 @@ export const hundredView = createView({
 //   fold: (value) => <Matrix matrix={value} />,
 // });
 
-// const singleKeyObject = createView({
-//   ...objectView,
-//   when: (node): node is object =>
-//     objectView.when(node) && Object.keys(node).length === 1,
-//   compact: (value) => Object.entries(value).pop(),
-// });
+export function oneOfView<Types extends string[]>(
+  types: Types,
+  renders?:
+    | Record<Types[number], View<Types[number]>["render"]>
+    | (Partial<Record<Types[number], View<Types[number]>["render"]>> & {
+        default: View<Types[number]>["render"];
+      })
+) {
+  return createView({
+    when: (node): node is Types[number] =>
+      typeof node === "string" && types.includes(node),
+    stringify: (value) => value,
+    render(value, expanded) {
+      if (!renders)
+        return <span className="text-red-600 dark:text-red-400">{value}</span>;
+      if (value in renders) {
+        return renders[value]?.(value, expanded);
+      }
+      if ("default" in renders) return renders.default(value, expanded);
+    },
+  });
+}
 
 export const extendedViews = [
   pointView,
@@ -222,8 +241,18 @@ export const extendedViews = [
   // hundredView,
   // singleKeyObject,
   // matrixView,
+  oneOfView(["idle", "hold", "moving", "drawing"] as const, {
+    default: (value) => <Badge variant="secondary">{value}</Badge>,
+  }),
   ...defaultViews,
 ];
+
+function isPrimitive(value: unknown) {
+  for (const view of extendedViews) {
+    if (view.when(value) && "fold" in view) return false;
+  }
+  return true;
+}
 
 export const CellValue: FC<{ value: unknown }> = ({ value }) => {
   for (const view of extendedViews)
@@ -263,13 +292,16 @@ function getFunctionSignature(func: Function): string {
   return "()";
 }
 
-function defaultTransformKey(key: ObjectKey, count: number = 0): string {
+export function defaultTransformKey(
+  key: ObjectKey,
+  siblings: number = 0
+): string {
   switch (typeof key) {
     case "string":
       return key;
     case "symbol":
       return `[${key.toString()}]`;
     case "number":
-      return String(key).padStart(Math.ceil(Math.log10(count)), "_"); // &nbsp; ??
+      return String(key).padStart(Math.ceil(Math.log10(siblings)), "_"); // &nbsp; ??
   }
 }

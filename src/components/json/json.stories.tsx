@@ -129,19 +129,34 @@ const sampleData = {
   },
   nested: {
     root: true,
-    a: {
-      b: {
-        c: {
-          d: {
-            e: "Deeply nested value",
-          },
-        },
-      },
-    },
+    prim: { a: { b: { c: { d: { e: "Deeply nested value" } } } } },
+    obj: { a: { b: { c: { d: { e: { one: 1, two: 2 } } } } } },
+    tree: { a: { b: { c: { one: { d: { e: 1 } }, two: { d: { e: 1 } } } } } },
   },
   compacts: {
     object: { x: 100, y: 150, visible: true },
     array: [10, 20, 30, 40, 50],
+  },
+  oneof: ["idle", "hold", "moving", "drawing"],
+  sets: {
+    empty: new Set(),
+    small: new Set([1, 2, 3]),
+    large: new Set(
+      Array(10)
+        .fill(0)
+        .map((_, i) => i + 100)
+    ),
+  },
+  maps: {
+    empty: new Map(),
+    small: new Map(Object.entries([1, 2, 3])),
+    large: new Map(
+      Object.entries(
+        Array(10)
+          .fill(0)
+          .map((_, i) => i + 100)
+      )
+    ),
   },
 };
 
@@ -152,6 +167,8 @@ export const Primary: Story = {
       initialExpand
       sections={[
         { title: "Name", path: "name" },
+        { title: "Sets", path: "sets" },
+        { title: "Maps", path: "maps" },
         { title: "Nested", path: "nested" },
         { title: "Compacts", path: "compacts" },
         { title: "Mixed Array", path: "mixedArray" },
@@ -163,6 +180,7 @@ export const Primary: Story = {
         { title: "Project Alpha Tasks (Table View)", path: "projects.0.tasks" },
         { title: "Primitive Array (Table View)", path: "primitiveArray" },
         { title: "Settings", path: "metadata.settings" },
+        { title: "One of", path: "oneof" },
         { title: "Non-existent Path", path: "some.invalid.path" },
       ]}
     />
