@@ -1,7 +1,6 @@
 import { Braces, Brackets, List, ListTree, TableIcon } from "lucide-react";
 import { FC, useMemo, useState } from "react";
 
-import { ArrayView } from "./array";
 import { JsonNode } from "./node";
 import { RawJson } from "./raw";
 import { Section } from "../json";
@@ -73,7 +72,6 @@ export const SectionView: FC<SectionProps> = ({ data, title, path }) => {
       {view === "tree" && <JsonNode data={data} />}
       {view === "list" && <JsonNode data={data} />}
       {view === "table" && isArray(data) && <ArrayTableView data={data} />}
-      {view === "array" && isArray(data) && <ArrayView data={data} />}
       {view === "raw" && <RawJson data={data} />}
       {data === undefined && (
         <div className="text-neutral-500 italic dark:text-neutral-400">

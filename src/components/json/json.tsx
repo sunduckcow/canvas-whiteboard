@@ -4,6 +4,7 @@ import React from "react";
 import { SectionView } from "./components/section";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+
 interface InlineOptions {
   array?: boolean | number;
   object?: boolean | number;

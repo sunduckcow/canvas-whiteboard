@@ -132,6 +132,10 @@ const sampleData = {
     prim: { a: { b: { c: { d: { e: "Deeply nested value" } } } } },
     obj: { a: { b: { c: { d: { e: { one: 1, two: 2 } } } } } },
     tree: { a: { b: { c: { one: { d: { e: 1 } }, two: { d: { e: 1 } } } } } },
+    symbolKeys: { [Symbol("a")]: { [Symbol("b")]: Symbol("c") } },
+    arrays: [[[["test"]]]],
+    // eslint-disable-next-line no-sparse-arrays
+    voids: [[, [, , [, , , "123"]]]],
   },
   compacts: {
     object: { x: 100, y: 150, visible: true },
@@ -151,11 +155,9 @@ const sampleData = {
     empty: new Map(),
     small: new Map(Object.entries([1, 2, 3])),
     large: new Map(
-      Object.entries(
-        Array(10)
-          .fill(0)
-          .map((_, i) => i + 100)
-      )
+      Array(10)
+        .fill(0)
+        .map((_, i) => [`key ${i}`, i + 100])
     ),
   },
 };

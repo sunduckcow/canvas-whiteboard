@@ -1,22 +1,31 @@
 import { FC, ReactNode } from "react";
 
-import { ArrayView } from "./array";
 // import { Matrix } from "./matrix";
 // import { JsonNode } from "./node"
-import { ObjectView } from "./object";
+import { EntriesView } from "./entries";
 import { Badge } from "@/components/ui/badge";
 import type { ObjectKey } from "@/utils/utility-types";
 import { Paralyze } from "@/utils/utility-types";
 
+/*
+JSON.stringify({ set: new Set([1,2,3,4])}, (_k, v) => {
+    if(v instanceof Set) {
+        return {title: 'Set()', value:{test: 'key'}}
+    }
+    return v
+})
+> '{"set":{"title":"Set()","value":{"test":"key"}}}'
+*/
+
 interface View<Node> {
   when: (node: unknown) => node is Node;
 
-  stringify: (node: Node) => string;
+  stringify: (node: Node) => string; // => string | {title: string; value: unknown} // stringify plane for viewing sets and maps
   render: (node: Node, expanded?: boolean) => ReactNode;
 
   fold?: (node: Node) => [ObjectKey, unknown][] | ReactNode;
   compactWhen?: (node: Node) => boolean; // QUESTION: maybe remove this prop and make compact return value nullable as predicate
-  compact?: (node: Node) => [ObjectKey, unknown] | ReactNode;
+  compact?: (node: Node) => ReactNode;
 
   transformKey: (key: ObjectKey, keys?: number) => string;
   /** use stringify in safeStringify */
@@ -98,6 +107,21 @@ const mapView = createView({
   when: (node): node is Map<unknown, unknown> => node instanceof Map,
   stringify: (value) => `Map(${value.size})`,
   render: span("text-indigo-600 dark:text-indigo-400"),
+  compactWhen: (value) => value.size <= 3,
+  compact(value) {
+    return (
+      <>
+        <span className="mr-2">{this.render(value)}</span>
+        <EntriesView
+          className={"text-indigo-600 dark:text-indigo-400"}
+          separator=" => "
+          entries={Array.from(value.entries())}
+          richKey
+        />
+      </>
+    );
+  },
+  fold: (value) => Array.from(value.entries()),
   serialize: true,
 });
 
@@ -105,7 +129,20 @@ const setView = createView({
   when: (node): node is Set<unknown> => node instanceof Set,
   stringify: (value) => `Set(${value.size})`,
   render: span("text-indigo-600 dark:text-indigo-400"),
-  // compact: (value) => {},
+  compactWhen: (value) => value.size <= 5,
+  compact(value) {
+    return (
+      <>
+        <span className="mr-2">{this.render(value)}</span>
+        <EntriesView
+          className={"text-indigo-600 dark:text-indigo-400"}
+          entries={Array.from(value.keys()).map((item) => [undefined, item])}
+        />
+      </>
+    );
+  },
+  fold: (value) =>
+    Array.from(value.keys()).map((item) => [undefined, item] as const),
   serialize: true,
 });
 
@@ -116,7 +153,12 @@ const arrayView = createView({
   // fold: Object.entries,
   fold: (value) => value.map((el, i) => [i, el] as [number, unknown]),
   compactWhen: (value) => value.length <= 5 && value.every(isPrimitive),
-  compact: (value) => <ArrayView data={value} />,
+  compact: (value) => (
+    <EntriesView
+      entries={value.map((item) => [undefined, item])}
+      brackets="[]"
+    />
+  ),
 });
 
 const objectView = createView({
@@ -127,7 +169,7 @@ const objectView = createView({
   fold: Object.entries,
   compactWhen: (value) =>
     Object.keys(value).length <= 3 && Object.values(value).every(isPrimitive),
-  compact: (value) => <ObjectView data={value} />,
+  compact: (value) => <EntriesView entries={Object.entries(value)} />,
 });
 
 export const fallbackView = createView({
@@ -166,7 +208,7 @@ export const pointView = createView({
     "y" in node &&
     Object.keys(node).length === 2,
   stringify: ({ x, y }) => `p(${Math.round(x)}, ${Math.round(y)})`,
-  render: span("text-violet-600 dark:text-violet-400"),
+  render: span("text-emerald-600 dark:text-emerald-400"),
 });
 
 interface Rect {
