@@ -1,6 +1,7 @@
 import { FC, PropsWithChildren, ReactNode } from "react";
 
-import { CellValue, defaultTransformKey } from "./views";
+import { CellValue } from "./views";
+import { defaultTransformKey } from "../utils";
 import { cn } from "@/lib/utils";
 
 interface EntriesViewProps {

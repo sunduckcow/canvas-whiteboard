@@ -26,3 +26,36 @@ export function traverseSingleKeys(
 
   return [keys, current];
 }
+
+// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+export function getFunctionSignature(func: Function): string {
+  const funcStr = func.toString();
+  const arrowMatch = funcStr.match(/^\s*(?:async\s*)?($$[^)]*$$)/);
+  const normalMatch = funcStr.match(
+    /^\s*(?:async\s*)?function\s*[^(]*($$[^)]*$$)/
+  );
+
+  if (arrowMatch) {
+    return arrowMatch[1];
+  }
+
+  if (normalMatch) {
+    return normalMatch[1];
+  }
+
+  return "()";
+}
+
+export function defaultTransformKey(
+  key: ObjectKey,
+  siblings: number = 0
+): string {
+  switch (typeof key) {
+    case "string":
+      return key;
+    case "symbol":
+      return `[${key.toString()}]`;
+    case "number":
+      return String(key).padStart(Math.ceil(Math.log10(siblings)), "_"); // &nbsp; ??
+  }
+}

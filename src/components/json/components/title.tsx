@@ -1,18 +1,24 @@
 import { FC, ReactNode } from "react";
 
+import { debug } from "./node";
 import { cn } from "@/lib/utils";
-
-const debug = false;
 
 interface NodeTitleProps {
   keys: ReactNode[] | ReactNode;
   value: ReactNode;
   onKeyClick: (idx: number) => void;
+  // TODO: decide more accurate names
+  keySeparator?: string;
+  valueSeparator?: string;
+  comma?: boolean;
 }
 export const NodeTitle: FC<NodeTitleProps> = ({
   keys: _keys,
   value,
   onKeyClick,
+  valueSeparator = ":",
+  keySeparator = "/",
+  comma,
 }) => {
   const keys = Array.isArray(_keys) ? _keys : [_keys];
   return (
@@ -33,7 +39,7 @@ export const NodeTitle: FC<NodeTitleProps> = ({
             debug && "border-gray-500 border-b-2"
           )}
         >
-          {idx === keys.length - 1 ? ":" : "/"}
+          {idx === keys.length - 1 ? valueSeparator : keySeparator}
         </span>,
       ])}
       <span
@@ -43,6 +49,7 @@ export const NodeTitle: FC<NodeTitleProps> = ({
       >
         {value}
       </span>
+      {comma && <span className="text-gray-500 hover:text-gray-500">,</span>}
     </>
   );
 };

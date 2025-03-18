@@ -1,9 +1,10 @@
 import { FC, isValidElement, ReactNode, useState } from "react";
 
-import { defaultTransformKey, findView } from "./views";
-import { traverseSingleKeys } from "../utils";
 import { Chevron } from "./chevron";
 import { NodeTitle } from "./title";
+import { traverseSingleKeys } from "../utils";
+import { defaultTransformKey } from "../utils";
+import { findView } from "./views";
 import { cn } from "@/lib/utils";
 import type { ObjectKey } from "@/utils/utility-types";
 
@@ -15,9 +16,10 @@ type JsonNodeProps = {
   level?: number;
   siblings?: number;
   recursionLimit?: number;
+  comma?: boolean;
 };
 
-const debug = false;
+export const debug = true;
 
 export const JsonNode: FC<JsonNodeProps> = ({
   data,
@@ -27,6 +29,7 @@ export const JsonNode: FC<JsonNodeProps> = ({
   level = 0,
   siblings,
   recursionLimit = 7,
+  comma,
 }) => {
   const hasKey = name !== undefined;
 
@@ -55,7 +58,8 @@ export const JsonNode: FC<JsonNodeProps> = ({
   return (
     <div
       className={cn(
-        hasKey && "my-1",
+        // hasKey && "my-1",
+        "my-1",
         debug && "border-blue-200 dark:border-blue-800 border"
       )}
     >
@@ -91,12 +95,13 @@ export const JsonNode: FC<JsonNodeProps> = ({
             setFoldDepth((prev) => (prev === idx ? Infinity : idx));
             setExpanded(true); // TODO: single state (true / false / number) -> true = Infinity, false = 0
           }}
+          comma={comma}
         />
       </div>
       {expandable && expanded && (
         <div className={cn(hasKey && "pl-12")}>
           {Array.isArray(fold)
-            ? fold.map(([key, value]) => (
+            ? fold.map(([key, value], idx, arr) => (
                 <JsonNode
                   key={String(key)}
                   data={value}
@@ -104,6 +109,7 @@ export const JsonNode: FC<JsonNodeProps> = ({
                   level={level + 1}
                   siblings={fold.length}
                   recursionLimit={recursionLimit}
+                  comma={idx !== arr.length - 1}
                 />
               ))
             : fold}

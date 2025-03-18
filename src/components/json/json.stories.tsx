@@ -94,6 +94,9 @@ const sampleData = {
   },
   functions: {
     arrow: (a: number, b: number) => a + b,
+    unnamed: function (arg: unknown) {
+      return arg;
+    },
     regular: function multiply(a: number, b: number) {
       return a * b;
     },
@@ -169,13 +172,13 @@ export const Primary: Story = {
       initialExpand
       sections={[
         { title: "Name", path: "name" },
-        { title: "Sets", path: "sets" },
-        { title: "Maps", path: "maps" },
         { title: "Nested", path: "nested" },
         { title: "Compacts", path: "compacts" },
         { title: "Mixed Array", path: "mixedArray" },
         { title: "Matrix", path: "matrices" },
         { title: "Geometry", path: "geometry" },
+        { title: "Sets", path: "sets" },
+        { title: "Maps", path: "maps" },
         { title: "Address Details", path: "address" },
         { title: "Projects (Table View)", path: "projects" },
         { title: "Root", path: "" },

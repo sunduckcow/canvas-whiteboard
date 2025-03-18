@@ -11,7 +11,8 @@
     "storybook": "storybook dev -p 6006 --no-open",
     "st": "pnpm run storybook",
     "build-storybook": "storybook build",
-    "inspector": "pnpx node-modules-inspector"
+    "inspector": "pnpx node-modules-inspector",
+    "typecheck": "tsc --noEmit -p tsconfig.app.json"
   },
   "dependencies": {
     "@radix-ui/react-separator": "^1.1.2",

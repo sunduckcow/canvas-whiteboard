@@ -1,11 +1,10 @@
-import { FC, ReactNode } from "react";
+import { FC } from "react";
+import { ReactNode } from "react";
 
-// import { Matrix } from "./matrix";
-// import { JsonNode } from "./node"
 import { EntriesView } from "./entries";
-import { Badge } from "@/components/ui/badge";
-import type { ObjectKey } from "@/utils/utility-types";
-import { Paralyze } from "@/utils/utility-types";
+import { defaultTransformKey } from "../utils";
+import { getFunctionSignature } from "../utils";
+import type { ObjectKey, Paralyze } from "@/utils/utility-types";
 
 /*
 JSON.stringify({ set: new Set([1,2,3,4])}, (_k, v) => {
@@ -16,14 +15,41 @@ JSON.stringify({ set: new Set([1,2,3,4])}, (_k, v) => {
 })
 > '{"set":{"title":"Set()","value":{"test":"key"}}}'
 */
+/*
 
-interface View<Node> {
+class Draw {
+  constructor(key, val) {
+    this.key = key
+    this.val = val
+  }
+}
+
+new Draw(1,2).constructor.name
+> 'Draw'
+
+({}).constructor.name
+> 'Object'
+*/
+
+// interface ObjectKeyMeta {
+//   key?: ObjectKey;
+//   separator?: string;
+//   richKey?: boolean | unknown; // overrides key
+//   displayKey?: boolean;
+//   childViews?: unknown; // ??
+//   childNodeMeta?: unknown; // ??
+// }
+
+export interface View<Node> {
   when: (node: unknown) => node is Node;
 
   stringify: (node: Node) => string; // => string | {title: string; value: unknown} // stringify plane for viewing sets and maps
   render: (node: Node, expanded?: boolean) => ReactNode;
 
-  fold?: (node: Node) => [ObjectKey, unknown][] | ReactNode;
+  // fold?: (node: Node) => [ObjectKey | undefined, unknown][] | ReactNode;
+  fold?: (
+    node: Node
+  ) => [ObjectKey /*| ObjectKeyMeta*/ | undefined, unknown][] | ReactNode;
   compactWhen?: (node: Node) => boolean; // QUESTION: maybe remove this prop and make compact return value nullable as predicate
   compact?: (node: Node) => ReactNode;
 
@@ -32,78 +58,77 @@ interface View<Node> {
   serialize?: boolean;
 }
 
-function span<Node>(className?: string) {
+export function span<Node>(className?: string) {
   return function (this: View<Node>, value: Node) {
     return <span className={className}>{this.stringify(value)}</span>;
   };
 }
 
-export const createView = <Node,>(
+export function createView<Node>(
   config: Paralyze<View<Node>, "transformKey">
-): View<Node> => ({
-  ...config,
-  transformKey: config.transformKey || defaultTransformKey,
+): View<Node> {
+  return {
+    ...config,
+    transformKey: config.transformKey || defaultTransformKey,
+  };
+}
+
+export const fallbackView = createView({
+  when: (_node): _node is unknown => true,
+  stringify: (value) => String(value),
+  render: span(),
 });
 
-const undefinedView = createView({
+/* Primitive Views */
+
+export const undefinedView = createView({
   when: (node): node is undefined => typeof node === "undefined",
   stringify: () => "undefined",
   render: span("text-gray-500 dark:text-gray-400"),
 });
-
-const nullView = createView({
+export const nullView = createView({
   when: (node): node is null => node === null,
   stringify: () => "null",
   render: span("text-red-600 dark:text-red-400"),
 });
-
-const stringView = createView({
+export const stringView = createView({
   when: (node): node is string => typeof node === "string",
   stringify: (value) => `"${value}"`,
   render: span("text-green-600 dark:text-green-400"),
 });
-
-const numberView = createView({
+export const numberView = createView({
   when: (node): node is number => typeof node === "number",
   stringify: (value) => String(value),
   render: span("text-blue-600 dark:text-blue-400"),
 });
-
-const booleanView = createView({
+export const booleanView = createView({
   when: (node): node is boolean => typeof node === "boolean",
   stringify: (value) => value.toString(),
   render: span("text-purple-600 dark:text-purple-400"),
 });
-
-const functionView = createView({
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-  when: (node): node is Function => typeof node === "function",
-  stringify: (value) => `ƒ ${getFunctionSignature(value)}`,
-  render: span("text-yellow-600 dark:text-yellow-400"),
-  serialize: true,
-});
-
-const symbolView = createView({
+export const symbolView = createView({
   when: (node): node is symbol => typeof node === "symbol",
   stringify: (value) => value.toString(),
   render: span("text-orange-600 dark:text-orange-400"),
 });
-
-const bigintView = createView({
+export const bigintView = createView({
   when: (node): node is bigint => typeof node === "bigint",
   stringify: (value) => `${value.toString()}n`,
   render: span("text-blue-600 dark:text-blue-400"),
   serialize: true,
 });
 
-const dateView = createView({
-  when: (node): node is Date => node instanceof Date,
-  stringify: (value) => value.toISOString(),
-  render: span("text-teal-600 dark:text-teal-400"),
-  serialize: true,
-});
+export const primitiveViews = [
+  undefinedView,
+  nullView,
+  stringView,
+  numberView,
+  booleanView,
+  symbolView,
+  bigintView,
+];
 
-const mapView = createView({
+export const mapView = createView({
   when: (node): node is Map<unknown, unknown> => node instanceof Map,
   stringify: (value) => `Map(${value.size})`,
   render: span("text-indigo-600 dark:text-indigo-400"),
@@ -121,11 +146,28 @@ const mapView = createView({
       </>
     );
   },
-  fold: (value) => Array.from(value.entries()),
+  fold: (value) =>
+    value
+      .entries()
+      .toArray()
+      .map(([key, value]) => [String(key), value] as [string, unknown]),
+  // fold: (value) => [
+  //   ["size", value.size],
+  //   [
+  //     "[[Entries]]",
+  //     value
+  //       .entries()
+  //       .map(([key, value]) => ({ [key]: value }))
+  //       .toArray(),
+  //   ],
+  // ],
+
   serialize: true,
 });
 
-const setView = createView({
+// const meta = Symbol("Json.meta");
+
+export const setView = createView({
   when: (node): node is Set<unknown> => node instanceof Set,
   stringify: (value) => `Set(${value.size})`,
   render: span("text-indigo-600 dark:text-indigo-400"),
@@ -142,15 +184,33 @@ const setView = createView({
     );
   },
   fold: (value) =>
-    Array.from(value.keys()).map((item) => [undefined, item] as const),
+    Array.from(value.keys()).map(
+      (value) => [undefined, value] as [undefined, unknown]
+    ),
   serialize: true,
 });
 
-const arrayView = createView({
+export const advancedViews = [mapView, setView];
+
+export const functionView = createView({
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
+  when: (node): node is Function => typeof node === "function",
+  stringify: (value) => `ƒ ${value.name} ${getFunctionSignature(value)}`,
+  render: span("text-yellow-600 dark:text-yellow-400"),
+  serialize: true,
+});
+
+export const dateView = createView({
+  when: (node): node is Date => node instanceof Date,
+  stringify: (value) => value.toISOString(),
+  render: span("text-teal-600 dark:text-teal-400"),
+  serialize: true,
+});
+
+export const arrayView = createView({
   when: (node): node is Array<unknown> => Array.isArray(node),
   stringify: (value) => `[] ${value.length} items`,
   render: span("text-gray-600 dark:text-gray-400"), // cursor-pointer hover:underline"
-  // fold: Object.entries,
   fold: (value) => value.map((el, i) => [i, el] as [number, unknown]),
   compactWhen: (value) => value.length <= 5 && value.every(isPrimitive),
   compact: (value) => (
@@ -161,43 +221,32 @@ const arrayView = createView({
   ),
 });
 
-const objectView = createView({
+export const objectView = createView({
   when: (node): node is Record<ObjectKey, unknown> =>
     typeof node === "object" && node !== null,
   stringify: (value) => `{} ${Object.keys(value).length} keys`,
   render: span("text-gray-600 dark:text-gray-400"), // cursor-pointer hover:underline"
-  fold: Object.entries,
+  fold: (value) =>
+    Object.entries(value).map(
+      ([key, value]) => [key, value] as [string, unknown]
+    ),
   compactWhen: (value) =>
     Object.keys(value).length <= 3 && Object.values(value).every(isPrimitive),
   compact: (value) => <EntriesView entries={Object.entries(value)} />,
 });
 
-export const fallbackView = createView({
-  when: (_node): _node is unknown => true,
-  stringify: (value) => String(value),
-  render: span(),
-});
+export const objectViews = [functionView, dateView, arrayView, objectView];
 
-const defaultViews = [
-  undefinedView,
-  nullView,
-  stringView,
-  numberView,
-  booleanView,
-  functionView,
-  symbolView,
-  bigintView,
-  dateView,
-  mapView,
-  setView,
-  arrayView,
-  objectView,
-  fallbackView,
-];
-
-interface Point {
+export interface Point {
   x: number;
   y: number;
+}
+
+export interface Rect {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
 }
 
 export const pointView = createView({
@@ -210,13 +259,6 @@ export const pointView = createView({
   stringify: ({ x, y }) => `p(${Math.round(x)}, ${Math.round(y)})`,
   render: span("text-emerald-600 dark:text-emerald-400"),
 });
-
-interface Rect {
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
-}
 
 export const rectangleView = createView({
   when: (node): node is Rect =>
@@ -238,11 +280,7 @@ export const rectangleView = createView({
   // ],
 });
 
-export const hundredView = createView({
-  when: (node): node is number => typeof node === "number" && node === 100,
-  stringify: () => `C (100)`,
-  render: span("text-blue-600 dark:text-blue-400"),
-});
+export const geometryViews = [pointView, rectangleView];
 
 // const matrixView = createView({
 //   when: (node): node is unknown[][] =>
@@ -277,33 +315,29 @@ export function oneOfView<Types extends string[]>(
   });
 }
 
-export const extendedViews = [
-  pointView,
-  rectangleView,
-  // hundredView,
-  // singleKeyObject,
-  // matrixView,
-  oneOfView(["idle", "hold", "moving", "drawing"] as const, {
-    default: (value) => <Badge variant="secondary">{value}</Badge>,
-  }),
-  ...defaultViews,
+export const defaultViews = [
+  ...primitiveViews,
+  ...geometryViews,
+  ...advancedViews,
+  ...objectViews,
+  fallbackView,
 ];
 
-function isPrimitive(value: unknown) {
-  for (const view of extendedViews) {
+export function isPrimitive(value: unknown) {
+  for (const view of defaultViews) {
     if (view.when(value) && "fold" in view) return false;
   }
   return true;
 }
 
 export const CellValue: FC<{ value: unknown }> = ({ value }) => {
-  for (const view of extendedViews)
+  for (const view of defaultViews)
     if (view.when(value)) return view.render(value as never);
 
   return <span>{String(value)}</span>;
 };
 
-export const findView = (value: unknown, views = extendedViews) => {
+export const findView = (value: unknown, views = defaultViews) => {
   return views.find((view) => view.when(value)) || fallbackView;
 };
 
@@ -311,39 +345,6 @@ export const safeStringify = (obj: unknown, space?: string | number) =>
   JSON.stringify(obj, jsonReplacer, space);
 
 export const jsonReplacer = (_key: string, value: unknown) =>
-  extendedViews
+  defaultViews
     .find((view) => view.serialize && view.when(value))
     ?.stringify(value as never) || value;
-
-// eslint-disable-next-line @typescript-eslint/no-unsafe-function-type
-function getFunctionSignature(func: Function): string {
-  const funcStr = func.toString();
-  const arrowMatch = funcStr.match(/^\s*(?:async\s*)?($$[^)]*$$)/);
-  const normalMatch = funcStr.match(
-    /^\s*(?:async\s*)?function\s*[^(]*($$[^)]*$$)/
-  );
-
-  if (arrowMatch) {
-    return arrowMatch[1];
-  }
-
-  if (normalMatch) {
-    return normalMatch[1];
-  }
-
-  return "()";
-}
-
-export function defaultTransformKey(
-  key: ObjectKey,
-  siblings: number = 0
-): string {
-  switch (typeof key) {
-    case "string":
-      return key;
-    case "symbol":
-      return `[${key.toString()}]`;
-    case "number":
-      return String(key).padStart(Math.ceil(Math.log10(siblings)), "_"); // &nbsp; ??
-  }
-}
