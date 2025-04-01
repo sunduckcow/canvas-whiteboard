@@ -1,7 +1,8 @@
-import { FC, isValidElement, ReactNode, useState } from "react";
+import { FC, isValidElement, ReactNode, useMemo } from "react";
 
 import { Chevron } from "./chevron";
 import { NodeTitle } from "./title";
+import { useJsonContext } from "../json-context";
 import { traverseSingleKeys } from "../utils";
 import { defaultTransformKey } from "../utils";
 import { findView } from "./views";
@@ -11,54 +12,64 @@ import type { ObjectKey } from "@/utils/utility-types";
 type JsonNodeProps = {
   data: unknown;
   name?: ObjectKey;
-  initialExpanded?: boolean;
   compact?: boolean;
   level?: number;
   siblings?: number;
   recursionLimit?: number;
   comma?: boolean;
+  path?: string[];
 };
 
-export const debug = true;
+export const debug = false;
 
 export const JsonNode: FC<JsonNodeProps> = ({
   data,
   name,
-  initialExpanded = true,
   compact = true,
   level = 0,
   siblings,
   recursionLimit = 7,
   comma,
+  path = [],
 }) => {
   const hasKey = name !== undefined;
-
-  const [foldDepth, setFoldDepth] = useState(Infinity);
-
-  const [keys, value] = traverseSingleKeys(name, data, foldDepth);
-
-  const isReactNode = isValidElement(value);
-
-  const view = findView(value);
-
-  const expandable = Boolean(view.fold) && !isReactNode;
-
-  const hasCompact =
-    view.compact && view.compactWhen && view.compactWhen(value as never);
-
-  const [expanded, setExpanded] = useState(
-    initialExpanded && hasKey ? !(compact && hasCompact) : true
+  const nodePath = useMemo(
+    () => (hasKey ? [...path, String(name)] : path),
+    [hasKey, name, path]
   );
 
-  const fold = isReactNode ? [] : view.fold?.(value as never);
+  const { getNodeState, updateNodeState } = useJsonContext();
+  const { expanded, foldDepth } = getNodeState(nodePath);
+
+  // Use Infinity for foldDepth when collapsed, but keep the stored value in state
+  const effectiveFoldDepth = expanded ? foldDepth : Infinity;
+  const [keys, value] = traverseSingleKeys(name, data, effectiveFoldDepth);
+
+  const isReactNode = isValidElement(value);
+  const view = findView(value);
+  const expandable = Boolean(view.fold) && !isReactNode;
+  const hasCompact =
+    view.compact && view.compactWhen && view.compactWhen(value as never);
 
   if (level >= recursionLimit)
     return <span className="bg-red-400">Recursion limit exceeded</span>;
 
+  const fold = isReactNode ? [] : view.fold?.(value as never);
+
+  const handleExpand = () => {
+    updateNodeState(nodePath, { expanded: !expanded });
+  };
+
+  const handleFoldDepthChange = (depth: number) => {
+    updateNodeState(nodePath, {
+      foldDepth: depth === foldDepth ? Infinity : depth,
+      expanded: true,
+    });
+  };
+
   return (
     <div
       className={cn(
-        // hasKey && "my-1",
         "my-1",
         debug && "border-blue-200 dark:border-blue-800 border"
       )}
@@ -67,14 +78,7 @@ export const JsonNode: FC<JsonNodeProps> = ({
         className={cn("flex items-center", !(hasKey && expandable) && "pl-6")}
       >
         {hasKey && expandable && (
-          <Chevron
-            open={expanded}
-            onClick={() => {
-              setExpanded((prev) => !prev);
-              // TODO: need fold context
-              setFoldDepth(Infinity);
-            }}
-          />
+          <Chevron open={expanded} onClick={handleExpand} />
         )}
         <NodeTitle
           keys={keys.map((key, idx, keys) => {
@@ -91,10 +95,7 @@ export const JsonNode: FC<JsonNodeProps> = ({
               ? value
               : view.render(value as never)
           }
-          onKeyClick={(idx) => {
-            setFoldDepth((prev) => (prev === idx ? Infinity : idx));
-            setExpanded(true); // TODO: single state (true / false / number) -> true = Infinity, false = 0
-          }}
+          onKeyClick={(idx) => handleFoldDepthChange(idx)}
           comma={comma}
         />
       </div>
@@ -110,6 +111,7 @@ export const JsonNode: FC<JsonNodeProps> = ({
                   siblings={fold.length}
                   recursionLimit={recursionLimit}
                   comma={idx !== arr.length - 1}
+                  path={nodePath}
                 />
               ))
             : fold}

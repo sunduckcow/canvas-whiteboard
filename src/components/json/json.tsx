@@ -2,6 +2,7 @@ import get from "lodash/get";
 import React from "react";
 
 import { SectionView } from "./components/section";
+import { JsonContextProvider } from "./json-context";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
@@ -15,7 +16,6 @@ interface Globals {
   initialExpand?: boolean | number;
   showPath?: boolean;
   inline?: boolean | InlineOptions;
-  // editable?: string[];
 }
 
 export interface Section extends Globals {
@@ -30,23 +30,24 @@ interface JsonProps extends Globals {
   className?: string;
   sections?: Section[];
   blacklist?: string[];
-  // extensions?: View<unknown>[];
 }
 
 export function Json({
   data,
   className,
   sections = [{}],
+  initialExpand = false,
   ...globals
 }: JsonProps) {
   return (
-    <div
-      className={cn(
-        "rounded-lg border border-neutral-200 bg-white text-neutral-950 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50",
-        className
-      )}
-    >
-      {/* <div className="flex items-center justify-between border-b p-3">
+    <JsonContextProvider initialExpanded={initialExpand}>
+      <div
+        className={cn(
+          "rounded-lg border border-neutral-200 bg-white text-neutral-950 shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:text-neutral-50",
+          className
+        )}
+      >
+        {/* <div className="flex items-center justify-between border-b p-3">
         <h3 className="text-lg font-medium">JSON Viewer</h3>
         <div className="flex items-center gap-2">
           <div className="relative w-64">
@@ -68,17 +69,18 @@ export function Json({
         </div>
       </div> */}
 
-      {sections.map((section, index) => {
-        const sectionData = section.path ? get(data, section.path) : data;
-        const isLastSection = index === sections.length - 1;
+        {sections.map((section, index) => {
+          const sectionData = section.path ? get(data, section.path) : data;
+          const isLastSection = index === sections.length - 1;
 
-        return (
-          <React.Fragment key={index}>
-            <SectionView {...globals} {...section} data={sectionData} />
-            {!isLastSection && <Separator />}
-          </React.Fragment>
-        );
-      })}
-    </div>
+          return (
+            <React.Fragment key={index}>
+              <SectionView {...globals} {...section} data={sectionData} />
+              {!isLastSection && <Separator />}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </JsonContextProvider>
   );
 }
